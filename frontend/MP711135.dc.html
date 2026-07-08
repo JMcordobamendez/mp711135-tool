@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@0.46.0/css/dseg.css">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#070a0f;color:#cbd3dd;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  a{color:#2ee6a6;text-decoration:none;} a:hover{color:#66f0c0;}
+  button{font-family:inherit;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:4px;background:#1b2430;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#e6ebf2;border:3px solid #0d131b;box-shadow:0 0 0 1px #2a3a34;cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#e6ebf2;border:3px solid #0d131b;cursor:pointer;}
+  ::selection{background:#2ee6a6;color:#05221a;}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:22px;display:flex;justify-content:center;">
+ <div style="width:100%;max-width:1360px;display:flex;flex-direction:column;gap:16px;">
+
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:#0c1118;border:1px solid #1b2430;border-radius:14px;">
+   <div style="display:flex;align-items:center;gap:14px;">
+    <div style="width:40px;height:40px;border-radius:10px;background:#0d131b;border:1px solid #24303c;display:flex;align-items:center;justify-content:center;">
+     <div style="width:15px;height:15px;border-radius:4px;background:#2ee6a6;box-shadow:0 0 14px #2ee6a6;"></div>
+    </div>
+    <div>
+     <div style="font:600 15px/1 'IBM Plex Sans';color:#e6ebf2;letter-spacing:.01em;">MULTICOMP&nbsp;PRO · MP711135</div>
+     <div style="font:500 11px/1.4 'IBM Plex Mono';color:#6f7b8a;letter-spacing:.07em;margin-top:5px;">60&nbsp;V · 10&nbsp;A · 300&nbsp;W — FUENTE DC + MULTÍMETRO</div>
+    </div>
+   </div>
+   <div style="display:flex;align-items:center;gap:22px;">
+    <div style="display:flex;align-items:center;gap:9px;">
+     <div style="width:8px;height:8px;border-radius:50%;background:#2ee6a6;box-shadow:0 0 8px #2ee6a6;"></div>
+     <div>
+      <div style="font:600 11px/1 'IBM Plex Mono';color:#aeb8c4;letter-spacing:.08em;">USB · SCPI</div>
+      <div style="font:500 10px/1.3 'IBM Plex Mono';color:#5b6673;letter-spacing:.1em;margin-top:3px;">CONECTADO</div>
+     </div>
+    </div>
+    <div style="font:500 15px/1 'IBM Plex Mono';color:#8a95a4;letter-spacing:.06em;padding-left:22px;border-left:1px solid #1b2430;">{{ clockStr }}</div>
+   </div>
+  </header>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+   <div style="display:inline-flex;padding:5px;gap:5px;background:#0c1118;border:1px solid #1b2430;border-radius:13px;">
+    <button onClick="{{ selectSource }}" style="{{ tabSourceStyle }}">◧&nbsp;&nbsp;FUENTE</button>
+    <button onClick="{{ selectMM }}" style="{{ tabMMStyle }}">∿&nbsp;&nbsp;MULTÍMETRO</button>
+   </div>
+   <div style="font:500 11px 'IBM Plex Mono';color:#556270;letter-spacing:.1em;">RES. 10&nbsp;mV / 1&nbsp;mA · READBACK 4½&nbsp;DÍGITOS</div>
+  </div>
+
+  <sc-if value="{{ faultActive }}" hint-placeholder-val="{{ false }}">
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:#25090d;border:1px solid #ff4d5e;border-radius:12px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+     <div style="width:10px;height:10px;border-radius:50%;background:#ff4d5e;box-shadow:0 0 12px #ff4d5e;"></div>
+     <span style="font:600 13px 'IBM Plex Sans';color:#ffd0d5;letter-spacing:.02em;">{{ faultText }}</span>
+    </div>
+    <button onClick="{{ resetFault }}" style="padding:9px 18px;border-radius:9px;border:1px solid #ff4d5e;background:transparent;color:#ff8b96;font:600 12px 'IBM Plex Sans';letter-spacing:.06em;cursor:pointer;">RESTABLECER</button>
+   </div>
+  </sc-if>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start;">
+
+   <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+
+    <sc-if value="{{ isSource }}" hint-placeholder-val="{{ true }}">
+     <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+       <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#2ee6a6;opacity:.55;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+         <span style="font:600 11px/1 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">TENSIÓN DE SALIDA</span>
+         <span style="{{ vBadgeStyle }}">{{ vBadgeText }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:16px;">
+         <div style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
+          <span style="color:rgba(46,230,166,.10);">{{ measVGhost }}</span>
+          <span style="position:absolute;inset:0;color:#2ee6a6;text-shadow:0 0 26px rgba(46,230,166,.4);white-space:nowrap;">{{ measVStr }}</span>
+         </div>
+         <span style="font:700 24px 'IBM Plex Mono';color:#2ee6a6;">V</span>
+        </div>
+        <div style="margin-top:16px;font:500 12px 'IBM Plex Mono';color:#7a8694;letter-spacing:.03em;">CONSIGNA&nbsp;&nbsp;<span style="color:#aeb8c4;">{{ setVStr }} V</span></div>
+       </div>
+
+       <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#ffb020;opacity:.55;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+         <span style="font:600 11px/1 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">CORRIENTE DE SALIDA</span>
+         <span style="{{ iBadgeStyle }}">{{ iBadgeText }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:16px;">
+         <div style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
+          <span style="color:rgba(255,176,32,.10);">{{ measIGhost }}</span>
+          <span style="position:absolute;inset:0;color:#ffb020;text-shadow:0 0 26px rgba(255,176,32,.38);">{{ measIStr }}</span>
+         </div>
+         <span style="font:700 24px 'IBM Plex Mono';color:#ffb020;">A</span>
+        </div>
+        <div style="margin-top:16px;font:500 12px 'IBM Plex Mono';color:#7a8694;letter-spacing:.03em;">LÍMITE&nbsp;&nbsp;<span style="color:#aeb8c4;">{{ setIStr }} A</span></div>
+       </div>
+
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#0d131b;border:1px solid #1b2430;border-radius:14px;overflow:hidden;">
+       <div style="padding:16px 22px;border-right:1px solid #1b2430;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">POTENCIA</div>
+        <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ measWStr }}<span style="font-size:14px;color:#6f7b8a;"> W</span></div>
+       </div>
+       <div style="padding:16px 22px;border-right:1px solid #1b2430;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">MODO REGULACIÓN</div>
+        <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:{{ regColor }};">{{ regText }}</div>
+       </div>
+       <div style="padding:16px 22px;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">TIEMPO ACTIVO</div>
+        <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ elapsedStr }}</div>
+       </div>
+      </div>
+     </div>
+    </sc-if>
+
+    <sc-if value="{{ isMM }}" hint-placeholder-val="{{ false }}">
+     <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:24px 26px;position:relative;overflow:hidden;">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:{{ mmColor }};opacity:.55;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+       <span style="font:600 12px/1 'IBM Plex Mono';letter-spacing:.12em;color:#8a95a4;">{{ mmFuncLabel }}</span>
+       <div style="display:flex;gap:8px;align-items:center;">
+        <span style="{{ holdBadgeStyle }}">{{ holdBadgeText }}</span>
+        <span style="padding:4px 10px;border-radius:6px;background:#0c1118;border:1px solid #24303c;font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#8a95a4;">AUTO</span>
+       </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-top:18px;">
+       <div style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:104px;line-height:1;">
+        <span style="color:{{ mmGhostColor }};">{{ mmValGhost }}</span>
+        <span style="position:absolute;inset:0;color:{{ mmColor }};text-shadow:0 0 30px {{ mmGlow }};">{{ mmValStr }}</span>
+       </div>
+       <span style="font:700 30px 'IBM Plex Mono';color:{{ mmColor }};">{{ mmUnit }}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px;">
+       <div style="background:#080c12;border:1px solid #131b24;border-radius:9px;padding:12px 14px;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#6f7b8a;">RANGO</div>
+        <div style="margin-top:6px;font:600 15px 'IBM Plex Mono';color:#cbd3dd;">{{ mmRange }}</div>
+       </div>
+       <div style="background:#080c12;border:1px solid #131b24;border-radius:9px;padding:12px 14px;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#6f7b8a;">MÁX</div>
+        <div style="margin-top:6px;font:600 15px 'IBM Plex Mono';color:#cbd3dd;">{{ mmMaxStr }}</div>
+       </div>
+       <div style="background:#080c12;border:1px solid #131b24;border-radius:9px;padding:12px 14px;">
+        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#6f7b8a;">MÍN</div>
+        <div style="margin-top:6px;font:600 15px 'IBM Plex Mono';color:#cbd3dd;">{{ mmMinStr }}</div>
+       </div>
+      </div>
+     </div>
+    </sc-if>
+
+    <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:300px;flex:1;">
+     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">{{ graphTitle }}</span>
+      <div style="display:flex;gap:16px;align-items:center;">
+       <sc-if value="{{ isSource }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:14px;align-items:center;">
+         <span style="display:flex;gap:6px;align-items:center;font:500 11px 'IBM Plex Mono';color:#8a95a4;"><span style="width:10px;height:3px;border-radius:2px;background:#2ee6a6;"></span>VOLTAJE</span>
+         <span style="display:flex;gap:6px;align-items:center;font:500 11px 'IBM Plex Mono';color:#8a95a4;"><span style="width:10px;height:3px;border-radius:2px;background:#ffb020;"></span>CORRIENTE</span>
+        </div>
+       </sc-if>
+       <sc-if value="{{ isMM }}" hint-placeholder-val="{{ false }}">
+        <span style="display:flex;gap:6px;align-items:center;font:500 11px 'IBM Plex Mono';color:#8a95a4;"><span style="width:10px;height:3px;border-radius:2px;background:{{ mmColor }};"></span>{{ mmFuncShort }}</span>
+       </sc-if>
+       <span style="font:500 11px 'IBM Plex Mono';color:#556270;">VENTANA {{ winLabel }}</span>
+      </div>
+     </div>
+     <div style="flex:1;min-height:230px;border-radius:10px;overflow:hidden;border:1px solid #131b24;">
+      <canvas ref="{{ canvasRef }}" style="width:100%;height:100%;display:block;"></canvas>
+     </div>
+    </div>
+
+   </div>
+
+   <sc-if value="{{ isSource }}" hint-placeholder-val="{{ true }}">
+    <aside style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:20px;">
+     <span style="font:600 12px 'IBM Plex Sans';letter-spacing:.12em;color:#8a95a4;">PARÁMETROS</span>
+
+     <button onClick="{{ toggleOutput }}" style="{{ outBtnStyle }}">{{ outBtnLabel }}</button>
+
+     <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+       <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.1em;color:#7a8694;">TENSIÓN · CONSIGNA</span>
+       <span style="font:500 10px 'IBM Plex Mono';color:#4a5563;">0–60 V</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;">
+       <button onClick="{{ vDown }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#2ee6a6;font:600 22px 'IBM Plex Mono';cursor:pointer;">−</button>
+       <div style="flex:1;text-align:center;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;">{{ setVStr }}<span style="font-size:14px;color:#6f7b8a;"> V</span></div>
+       <button onClick="{{ vUp }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#2ee6a6;font:600 22px 'IBM Plex Mono';cursor:pointer;">+</button>
+      </div>
+      <input type="range" min="0" max="60" step="0.01" value="{{ setV }}" onInput="{{ onSetV }}" style="width:100%;accent-color:#2ee6a6;">
+     </div>
+
+     <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+       <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.1em;color:#7a8694;">CORRIENTE · LÍMITE</span>
+       <span style="font:500 10px 'IBM Plex Mono';color:#4a5563;">0–10 A</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;">
+       <button onClick="{{ iDown }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#ffb020;font:600 22px 'IBM Plex Mono';cursor:pointer;">−</button>
+       <div style="flex:1;text-align:center;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;">{{ setIStr }}<span style="font-size:14px;color:#6f7b8a;"> A</span></div>
+       <button onClick="{{ iUp }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#ffb020;font:600 22px 'IBM Plex Mono';cursor:pointer;">+</button>
+      </div>
+      <input type="range" min="0" max="10" step="0.001" value="{{ setI }}" onInput="{{ onSetI }}" style="width:100%;accent-color:#ffb020;">
+     </div>
+
+     <div style="border-top:1px solid #1b2430;padding-top:18px;display:flex;flex-direction:column;gap:16px;">
+      <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.12em;color:#7a8694;">PROTECCIÓN</span>
+      <div style="display:flex;gap:12px;">
+       <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+        <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6f7b8a;">OVP · TENSIÓN</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+         <button onClick="{{ ovpDown }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">−</button>
+         <div style="flex:1;text-align:center;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;">{{ ovpStr }} V</div>
+         <button onClick="{{ ovpUp }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">+</button>
+        </div>
+       </div>
+       <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+        <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6f7b8a;">OCP · CORRIENTE</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+         <button onClick="{{ ocpDown }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">−</button>
+         <div style="flex:1;text-align:center;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;">{{ ocpStr }} A</div>
+         <button onClick="{{ ocpUp }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">+</button>
+        </div>
+       </div>
+      </div>
+     </div>
+
+     <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+       <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6f7b8a;">CARGA CONECTADA · SIMULACIÓN</span>
+       <span style="font:600 12px 'IBM Plex Mono';color:#aeb8c4;">{{ loadStr }} Ω</span>
+      </div>
+      <input type="range" min="1" max="80" step="0.5" value="{{ loadR }}" onInput="{{ onLoad }}" style="width:100%;accent-color:#8a95a4;">
+     </div>
+
+     <div style="{{ statusStyle }}">{{ statusText }}</div>
+    </aside>
+   </sc-if>
+
+   <sc-if value="{{ isMM }}" hint-placeholder-val="{{ false }}">
+    <aside style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:20px;">
+     <span style="font:600 12px 'IBM Plex Sans';letter-spacing:.12em;color:#8a95a4;">FUNCIÓN</span>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <sc-for list="{{ mmFuncs }}" as="f" hint-placeholder-count="4">
+       <button onClick="{{ f.onClick }}" style="{{ f.style }}">
+        <span style="font:700 16px 'IBM Plex Mono';">{{ f.top }}</span>
+        <span style="font:500 10px 'IBM Plex Sans';opacity:.75;">{{ f.sub }}</span>
+       </button>
+      </sc-for>
+     </div>
+
+     <div style="border-top:1px solid #1b2430;padding-top:18px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+       <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.1em;color:#7a8694;">RANGO</span>
+       <span style="font:600 14px 'IBM Plex Mono';color:#dbe2ea;">{{ mmRange }} · AUTO</span>
+      </div>
+      <button onClick="{{ toggleHold }}" style="{{ holdBtnStyle }}">{{ holdBtnLabel }}</button>
+      <button onClick="{{ resetMinMax }}" style="padding:11px;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#8a95a4;font:600 12px 'IBM Plex Sans';letter-spacing:.06em;cursor:pointer;">REINICIAR MÁX / MÍN</button>
+     </div>
+
+     <div style="border-top:1px solid #1b2430;padding-top:18px;font:500 11px/1.7 'IBM Plex Mono';color:#556270;letter-spacing:.02em;">
+      Entrada aislada ≥10&nbsp;MΩ. Conecte las puntas a los bornes correspondientes. La lectura se refresca en pseudo tiempo real.
+     </div>
+    </aside>
+   </sc-if>
+
+  </div>
+
+  <div style="text-align:center;font:500 10px 'IBM Plex Mono';color:#3a4451;letter-spacing:.14em;padding:2px 0 4px;">MP711135 · INTERFAZ DE CONTROL · SIMULACIÓN DE DEMOSTRACIÓN</div>
+
+ </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+ &quot;startMode&quot;: {&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;source&quot;,&quot;mm&quot;],&quot;default&quot;:&quot;source&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Comportamiento&quot;},
+ &quot;refreshHz&quot;: {&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:14,&quot;min&quot;:4,&quot;max&quot;:30,&quot;unit&quot;:&quot; Hz&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Comportamiento&quot;},
+ &quot;graphWindowSec&quot;: {&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:30,&quot;min&quot;:10,&quot;max&quot;:90,&quot;step&quot;:5,&quot;unit&quot;:&quot; s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Gráfica&quot;},
+ &quot;showGrid&quot;: {&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Gráfica&quot;}
+}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.canvasRef = React.createRef();
+    this.bufV = [];
+    this.bufI = [];
+    this.bufMM = [];
+    this.mmMin = null;
+    this.mmMax = null;
+    this.outStart = 0;
+    this._hz = 14;
+    this.META = {
+      DCV: { unit:'V',  dec:3, range:'20 V',   base:3.300, amp:0.018, per:1500, noise:0.004, group:'v', label:'TENSIÓN DC',  sub:'Tensión DC', short:'V DC' },
+      ACV: { unit:'V',  dec:1, range:'750 V',  base:229.8, amp:0.7,   per:900,  noise:0.15,  group:'v', label:'TENSIÓN AC',  sub:'Tensión AC', short:'V AC' },
+      DCA: { unit:'mA', dec:2, range:'200 mA', base:150.0, amp:0.9,   per:1200, noise:0.25,  group:'i', label:'CORRIENTE DC',sub:'Corriente DC', short:'A DC' },
+      ACA: { unit:'A',  dec:3, range:'10 A',   base:1.200, amp:0.012, per:1000, noise:0.003, group:'i', label:'CORRIENTE AC',sub:'Corriente AC', short:'A AC' },
+    };
+    this.state = {
+      mode:'source',
+      outputOn:false,
+      setV:12.00, setI:2.000,
+      ovp:61.0, ocp:10.10,
+      loadR:8.0,
+      measV:0, measI:0, reg:'OFF',
+      fault:null,
+      mmFunc:'DCV', mmVal:0, hold:false,
+      now: Date.now(),
+      elapsed:0,
+    };
+  }
+
+  get hz(){ const h=Number(this.props.refreshHz); return (h>=4&&h<=30)?h:14; }
+  get winSec(){ const w=Number(this.props.graphWindowSec); return (w>=10&&w<=90)?w:30; }
+  get cap(){ return Math.max(30, Math.round(this.hz*this.winSec)); }
+  get showGrid(){ return this.props.showGrid !== false; }
+
+  componentDidMount(){
+    if(this.props.startMode === 'mm') this.setState({ mode:'mm' });
+    this.initCanvas();
+    this.startLoop();
+    this.clock = setInterval(()=> this.setState({ now: Date.now() }), 1000);
+  }
+  componentDidUpdate(){ if(this._hz !== this.hz) this.startLoop(); }
+  componentWillUnmount(){
+    clearInterval(this.loop); clearInterval(this.clock);
+    if(this.ro) this.ro.disconnect();
+  }
+
+  startLoop(){
+    clearInterval(this.loop);
+    this._hz = this.hz;
+    this.loop = setInterval(()=> this.tick(), 1000/this._hz);
+  }
+
+  initCanvas(){
+    const c = this.canvasRef.current; if(!c) return;
+    this.ctx = c.getContext('2d');
+    this.resizeCanvas();
+    this.ro = new ResizeObserver(()=> this.resizeCanvas());
+    this.ro.observe(c);
+  }
+  resizeCanvas(){
+    const c = this.canvasRef.current; if(!c || !this.ctx) return;
+    const r = c.getBoundingClientRect();
+    if(r.width < 2 || r.height < 2) return;
+    const dpr = window.devicePixelRatio || 1;
+    c.width = Math.round(r.width*dpr);
+    c.height = Math.round(r.height*dpr);
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.cssW = r.width; this.cssH = r.height;
+    this.drawGraph();
+  }
+
+  clamp(v,a,b){ return Math.min(b, Math.max(a, v)); }
+  round(v,step){ return Math.round(v/step)*step; }
+  push(buf,val){ buf.push(val); const cap=this.cap; while(buf.length>cap) buf.shift(); }
+
+  trip(kind){ this.setState({ fault:kind, outputOn:false }); }
+
+  mmSignal(func,t){
+    const m = this.META[func];
+    return m.base + m.amp*Math.sin(t/m.per) + (Math.random()-0.5)*m.noise;
+  }
+
+  tick(){
+    const t = performance.now();
+    const s = this.state;
+    // ---- source simulation ----
+    let measV=0, measI=0, reg='OFF';
+    if(s.outputOn && !s.fault){
+      const vT = s.setV;
+      const iAtV = s.loadR>0 ? vT/s.loadR : Infinity;
+      let vout, iout;
+      if(iAtV <= s.setI){ reg='CV'; vout=vT; iout=iAtV; }
+      else { reg='CC'; iout=s.setI; vout=s.setI*s.loadR; }
+      if(vout > s.ovp + 1e-6){ this.trip('OVP'); this.push(this.bufV,0); this.push(this.bufI,0); this.drawGraph(); return; }
+      if(iout > s.ocp + 1e-6){ this.trip('OCP'); this.push(this.bufV,0); this.push(this.bufI,0); this.drawGraph(); return; }
+      measV = Math.max(0, vout + (Math.random()-0.5)*0.010);
+      measI = Math.max(0, iout + (Math.random()-0.5)*0.004);
+    }
+    this.push(this.bufV, measV);
+    this.push(this.bufI, measI);
+    // ---- multimeter simulation ----
+    let mmVal = s.mmVal;
+    if(s.mode==='mm' && !s.hold){
+      mmVal = this.mmSignal(s.mmFunc, t);
+      this.push(this.bufMM, mmVal);
+      this.mmMax = this.mmMax==null ? mmVal : Math.max(this.mmMax, mmVal);
+      this.mmMin = this.mmMin==null ? mmVal : Math.min(this.mmMin, mmVal);
+    }
+    const elapsed = (s.outputOn && !s.fault) ? Math.floor((performance.now()-this.outStart)/1000) : 0;
+    this.setState({ measV, measI, reg, mmVal, elapsed });
+    this.drawGraph();
+  }
+
+  maxOf(b){ let m=-Infinity; for(const v of b) if(v>m) m=v; return m; }
+  minOf(b){ let m=Infinity; for(const v of b) if(v<m) m=v; return m; }
+  niceTop(v){ v=Math.max(v*1.12, 1e-6); const e=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,2,5,10]){ if(m*e>=v) return m*e; } return 10*e; }
+
+  drawTrace(buf, vmin, vmax, color){
+    const ctx=this.ctx, W=this.cssW, H=this.cssH, N=this.cap;
+    if(!ctx || buf.length<2 || vmax<=vmin) return;
+    const padT=14, padB=16;
+    const yOf = v => (H-padB) - this.clamp((v-vmin)/(vmax-vmin),0,1)*(H-padT-padB);
+    const dx = W/(N-1);
+    const vis = buf.slice(Math.max(0, buf.length-N));
+    const xOf = i => W - (vis.length-1-i)*dx;
+    // fill
+    ctx.beginPath();
+    vis.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.lineTo(xOf(vis.length-1), H-padB);
+    ctx.lineTo(xOf(0), H-padB);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0,padT,0,H-padB);
+    g.addColorStop(0, color+'26'); g.addColorStop(1, color+'00');
+    ctx.fillStyle = g; ctx.fill();
+    // line
+    ctx.beginPath();
+    vis.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round';
+    ctx.shadowColor=color; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+    // head
+    const hx=xOf(vis.length-1), hy=yOf(vis[vis.length-1]);
+    ctx.fillStyle=color; ctx.beginPath(); ctx.arc(hx,hy,3,0,Math.PI*2); ctx.fill();
+  }
+
+  drawGraph(){
+    const ctx=this.ctx; if(!ctx) return;
+    const W=this.cssW, H=this.cssH; if(!W||!H) return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#070b10'; ctx.fillRect(0,0,W,H);
+    if(this.showGrid){
+      ctx.strokeStyle='rgba(148,163,184,0.06)'; ctx.lineWidth=1;
+      for(let i=1;i<5;i++){ const y=H*i/5; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+      for(let i=1;i<8;i++){ const x=W*i/8; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    }
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    if(this.state.mode==='source'){
+      const vmax = this.niceTop(Math.max(this.maxOf(this.bufV), this.state.setV, 0.1));
+      const imax = this.niceTop(Math.max(this.maxOf(this.bufI), this.state.setI, 0.05));
+      this.drawTrace(this.bufV, 0, vmax, '#2ee6a6');
+      this.drawTrace(this.bufI, 0, imax, '#ffb020');
+      ctx.textAlign='left';  ctx.fillStyle='rgba(46,230,166,0.7)'; ctx.fillText((vmax<10?vmax.toFixed(1):vmax.toFixed(0))+' V', 8, 14);
+      ctx.textAlign='right'; ctx.fillStyle='rgba(255,176,32,0.7)'; ctx.fillText((imax<10?imax.toFixed(2):imax.toFixed(1))+' A', W-8, 14);
+    } else {
+      const meta = this.META[this.state.mmFunc];
+      let hi=this.maxOf(this.bufMM), lo=this.minOf(this.bufMM);
+      if(!isFinite(hi)){ hi=1; lo=0; }
+      let pad=(hi-lo)*0.3; if(pad < Math.abs(hi)*0.02) pad = Math.abs(hi)*0.05 + 1e-6; if(pad<=0) pad=1;
+      let top=hi+pad, bot=Math.max(0, lo-pad); if(top<=bot) top=bot+1;
+      const color = meta.group==='v' ? '#2ee6a6' : '#ffb020';
+      this.drawTrace(this.bufMM, bot, top, color);
+      ctx.textAlign='left'; ctx.fillStyle='rgba(148,163,184,0.6)';
+      ctx.fillText(top.toFixed(meta.dec)+' '+meta.unit, 8, 14);
+      ctx.fillText(bot.toFixed(meta.dec)+' '+meta.unit, 8, H-6);
+    }
+  }
+
+  // ---- handlers ----
+  selectSource(){ this.setState({ mode:'source' }); }
+  selectMM(){ this.bufMM=[]; this.mmMin=null; this.mmMax=null; this.setState({ mode:'mm' }); }
+  toggleOutput(){
+    if(this.state.fault) return;
+    const on = !this.state.outputOn;
+    if(on) this.outStart = performance.now();
+    this.setState({ outputOn:on });
+  }
+  resetFault(){ this.setState({ fault:null }); }
+  onSetV(e){ this.setState({ setV: this.clamp(+e.target.value,0,60) }); }
+  onSetI(e){ this.setState({ setI: this.clamp(+e.target.value,0,10) }); }
+  onLoad(e){ this.setState({ loadR: this.clamp(+e.target.value,1,80) }); }
+  vUp(){ this.setState(s=>({ setV: this.clamp(this.round(s.setV+0.10,0.01),0,60) })); }
+  vDown(){ this.setState(s=>({ setV: this.clamp(this.round(s.setV-0.10,0.01),0,60) })); }
+  iUp(){ this.setState(s=>({ setI: this.clamp(this.round(s.setI+0.10,0.001),0,10) })); }
+  iDown(){ this.setState(s=>({ setI: this.clamp(this.round(s.setI-0.10,0.001),0,10) })); }
+  ovpUp(){ this.setState(s=>({ ovp: this.clamp(this.round(s.ovp+0.5,0.1),0,61) })); }
+  ovpDown(){ this.setState(s=>({ ovp: this.clamp(this.round(s.ovp-0.5,0.1),0,61) })); }
+  ocpUp(){ this.setState(s=>({ ocp: this.clamp(this.round(s.ocp+0.1,0.01),0,10.1) })); }
+  ocpDown(){ this.setState(s=>({ ocp: this.clamp(this.round(s.ocp-0.1,0.01),0,10.1) })); }
+  setMMFunc(k){ this.bufMM=[]; this.mmMin=null; this.mmMax=null; this.setState({ mmFunc:k, hold:false }); }
+  toggleHold(){ this.setState(s=>({ hold:!s.hold })); }
+  resetMinMax(){ this.mmMin=null; this.mmMax=null; this.forceUpdate(); }
+
+  fmt(n,d){ return Number(n).toFixed(d); }
+  ghost(s){ return s.replace(/[0-9]/g,'8'); }
+  timeStr(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+
+  renderVals(){
+    const st = this.state;
+    const meta = this.META[st.mmFunc];
+    // source strings
+    const measVStr = this.fmt(st.measV,2);
+    const measIStr = this.fmt(st.measI,3);
+    const measWStr = this.fmt(st.measV*st.measI,2);
+    // badges
+    const badgeBase = 'padding:4px 11px;border-radius:6px;font:700 11px \'IBM Plex Mono\';letter-spacing:.1em;';
+    const off = !st.outputOn || !!st.fault;
+    const vBadgeActive = st.reg==='CV' && !off;
+    const iBadgeActive = st.reg==='CC' && !off;
+    const vBadgeStyle = off
+      ? badgeBase+'background:#0c1118;border:1px solid #24303c;color:#5b6673;'
+      : (vBadgeActive ? badgeBase+'background:#12211b;border:1px solid #2ee6a6;color:#2ee6a6;' : badgeBase+'background:#0c1118;border:1px solid #24303c;color:#556270;');
+    const iBadgeStyle = off
+      ? badgeBase+'background:#0c1118;border:1px solid #24303c;color:#5b6673;'
+      : (iBadgeActive ? badgeBase+'background:#241a08;border:1px solid #ffb020;color:#ffb020;' : badgeBase+'background:#0c1118;border:1px solid #24303c;color:#556270;');
+    const regText = off ? 'OFF' : st.reg;
+    const regColor = off ? '#5b6673' : (st.reg==='CV' ? '#2ee6a6' : '#ffb020');
+
+    // output button
+    const outBtnBase = 'width:100%;padding:15px;border-radius:11px;font:700 14px \'IBM Plex Sans\';letter-spacing:.06em;cursor:pointer;transition:all .15s;';
+    const outBtnStyle = st.outputOn
+      ? outBtnBase+'background:#2ee6a6;border:1px solid #2ee6a6;color:#05221a;box-shadow:0 0 24px rgba(46,230,166,.35);'
+      : outBtnBase+'background:transparent;border:1px solid #2a3a34;color:#2ee6a6;';
+    const outBtnLabel = st.outputOn ? '● SALIDA ACTIVA' : '○ SALIDA EN PAUSA';
+
+    // status line
+    const statusBase = 'border-radius:9px;padding:12px 14px;font:600 12px \'IBM Plex Mono\';letter-spacing:.03em;text-align:center;';
+    let statusStyle, statusText;
+    if(st.fault){ statusStyle = statusBase+'background:#25090d;border:1px solid #ff4d5e;color:#ff8b96;'; statusText = '⚠ PROTECCIÓN '+st.fault+' DISPARADA'; }
+    else if(!st.outputOn){ statusStyle = statusBase+'background:#0c1118;border:1px solid #1b2430;color:#6f7b8a;'; statusText = 'SALIDA EN PAUSA'; }
+    else if(st.reg==='CC'){ statusStyle = statusBase+'background:#241a08;border:1px solid #3a2c10;color:#ffb020;'; statusText = 'LÍMITE DE CORRIENTE (CC)'; }
+    else { statusStyle = statusBase+'background:#12211b;border:1px solid #17352a;color:#2ee6a6;'; statusText = 'REGULACIÓN DE TENSIÓN (CV)'; }
+
+    // mode tabs
+    const tabBase = 'padding:11px 24px;border:none;border-radius:9px;font:600 13px \'IBM Plex Sans\';letter-spacing:.08em;cursor:pointer;transition:all .15s;';
+    const tabSourceStyle = st.mode==='source' ? tabBase+'background:#2ee6a6;color:#05221a;' : tabBase+'background:transparent;color:#8a95a4;';
+    const tabMMStyle = st.mode==='mm' ? tabBase+'background:#2ee6a6;color:#05221a;' : tabBase+'background:transparent;color:#8a95a4;';
+
+    // mm
+    const mmColor = meta.group==='v' ? '#2ee6a6' : '#ffb020';
+    const mmGhostColor = meta.group==='v' ? 'rgba(46,230,166,.10)' : 'rgba(255,176,32,.10)';
+    const mmGlow = meta.group==='v' ? 'rgba(46,230,166,.4)' : 'rgba(255,176,32,.38)';
+    const mmValStr = this.fmt(st.mmVal, meta.dec);
+    const mmMaxStr = this.mmMax==null ? '—' : this.fmt(this.mmMax, meta.dec)+' '+meta.unit;
+    const mmMinStr = this.mmMin==null ? '—' : this.fmt(this.mmMin, meta.dec)+' '+meta.unit;
+
+    const funcTabBase = 'display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;padding:13px 15px;border-radius:10px;cursor:pointer;transition:all .12s;';
+    const mmFuncs = Object.keys(this.META).map(k=>{
+      const m=this.META[k]; const active = st.mmFunc===k;
+      const acc = m.group==='v' ? '#2ee6a6' : '#ffb020';
+      const style = active
+        ? funcTabBase+'background:#0f1a16;border:1px solid '+acc+';color:'+acc+';'
+        : funcTabBase+'background:#0c1118;border:1px solid #1b2430;color:#8a95a4;';
+      return { key:k, top:m.short, sub:m.sub, style, onClick:()=>this.setMMFunc(k) };
+    });
+
+    const holdBtnBase = 'padding:12px;border-radius:9px;font:600 12px \'IBM Plex Sans\';letter-spacing:.06em;cursor:pointer;transition:all .15s;';
+    const holdBtnStyle = st.hold ? holdBtnBase+'background:#3aa0ff;border:1px solid #3aa0ff;color:#04121f;' : holdBtnBase+'background:transparent;border:1px solid #2a3a4a;color:#7fbfff;';
+    const holdBtnLabel = st.hold ? '■ LECTURA CONGELADA' : '⏸ CONGELAR LECTURA (HOLD)';
+    const holdBadgeBase = 'padding:4px 10px;border-radius:6px;font:600 10px \'IBM Plex Mono\';letter-spacing:.1em;';
+    const holdBadgeStyle = st.hold ? holdBadgeBase+'background:#0a1b2e;border:1px solid #3aa0ff;color:#7fbfff;' : holdBadgeBase+'background:#0c1118;border:1px solid #24303c;color:#556270;';
+    const holdBadgeText = st.hold ? 'HOLD' : 'LIVE';
+
+    const now = new Date(st.now);
+    const clockStr = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+
+    return {
+      isSource: st.mode==='source',
+      isMM: st.mode==='mm',
+      canvasRef: this.canvasRef,
+      clockStr,
+      // source
+      measVStr, measVGhost:this.ghost(measVStr),
+      measIStr, measIGhost:this.ghost(measIStr),
+      measWStr,
+      setV:st.setV, setI:st.setI, ovp:st.ovp, ocp:st.ocp, loadR:st.loadR,
+      setVStr:this.fmt(st.setV,2), setIStr:this.fmt(st.setI,3),
+      ovpStr:this.fmt(st.ovp,1), ocpStr:this.fmt(st.ocp,2), loadStr:this.fmt(st.loadR,1),
+      vBadgeStyle, vBadgeText: off?'—':'CV',
+      iBadgeStyle, iBadgeText: off?'—':'CC',
+      regText, regColor,
+      elapsedStr:this.timeStr(st.elapsed),
+      outBtnStyle, outBtnLabel,
+      statusStyle, statusText,
+      tabSourceStyle, tabMMStyle,
+      faultActive: !!st.fault,
+      faultText: st.fault ? ('PROTECCIÓN '+st.fault+' ACTIVADA — SALIDA CORTADA POR SEGURIDAD') : '',
+      // graph
+      graphTitle: st.mode==='source' ? 'MONITOR V / A · TIEMPO REAL' : 'MONITOR '+meta.label+' · TIEMPO REAL',
+      winLabel: this.winSec+' s',
+      // mm
+      mmColor, mmGhostColor, mmGlow,
+      mmValStr, mmValGhost:this.ghost(mmValStr), mmUnit:meta.unit,
+      mmFuncLabel:meta.label, mmFuncShort:meta.short, mmRange:meta.range,
+      mmMaxStr, mmMinStr, mmFuncs,
+      holdBtnStyle, holdBtnLabel, holdBadgeStyle, holdBadgeText,
+      // handlers
+      selectSource:()=>this.selectSource(),
+      selectMM:()=>this.selectMM(),
+      toggleOutput:()=>this.toggleOutput(),
+      resetFault:()=>this.resetFault(),
+      onSetV:(e)=>this.onSetV(e), onSetI:(e)=>this.onSetI(e), onLoad:(e)=>this.onLoad(e),
+      vUp:()=>this.vUp(), vDown:()=>this.vDown(), iUp:()=>this.iUp(), iDown:()=>this.iDown(),
+      ovpUp:()=>this.ovpUp(), ovpDown:()=>this.ovpDown(), ocpUp:()=>this.ocpUp(), ocpDown:()=>this.ocpDown(),
+      toggleHold:()=>this.toggleHold(), resetMinMax:()=>this.resetMinMax(),
+    };
+  }
+}
+</script>
+</body>
+</html>
