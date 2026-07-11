@@ -1,6 +1,6 @@
 # MP711135 Tool
 
-Interfaz web para controlar y monitorizar en remoto la fuente de alimentación DC **MP711135** (Multicomp Pro) desde el navegador, en vez de operarla desde sus controles físicos. El backend habla con el dispositivo por **USB usando comandos SCPI** a través de **PyVISA**, y expone esa funcionalidad a un frontend mediante una API construida con **FastAPI**.
+Interfaz web para controlar y monitorizar en remoto la fuente de alimentación DC **MP711135** (Multicomp Pro) desde el navegador, en vez de operarla desde sus controles físicos. El backend habla con el dispositivo por **USB usando comandos SCPI** a través de un puerto serie (**pyserial**), y expone esa funcionalidad a un frontend mediante una API construida con **FastAPI**.
 
 ## Qué hace la aplicación
 
@@ -55,7 +55,7 @@ flowchart LR
     subgraph Servidor["Backend Python"]
         API["FastAPI\nendpoints REST"]
         WS["WebSocket\n/ws/measurements"]
-        DEV["Módulo device.py\n(wrapper PyVISA)"]
+        DEV["Módulo device.py\n(wrapper pyserial)"]
     end
 
     HW["MP711135\n(SCPI sobre USB)"]
@@ -64,7 +64,7 @@ flowchart LR
     UI <-- "medidas en tiempo real" --> WS
     API --> DEV
     WS --> DEV
-    DEV -- "comandos SCPI\n(PyVISA)" --> HW
+    DEV -- "comandos SCPI\n(pyserial)" --> HW
     HW -- "respuestas SCPI" --> DEV
 ```
 
@@ -76,13 +76,14 @@ flowchart LR
 
 ## Estado actual
 
-- `frontend/MP711135.dc.html` — mockup funcional de la interfaz (fuente + multímetro), con **datos simulados**, no conectado todavía al dispositivo real ni a un backend. Sirve como referencia visual y de comportamiento para el desarrollo del backend.
-- Backend (PyVISA + FastAPI): pendiente de empezar.
-- Conexión real con el dispositivo por USB: pendiente de verificar.
+- `frontend/MP711135.dc.html` — mockup funcional de la interfaz (fuente + multímetro), con **datos simulados**, no conectado todavía al backend real. Sirve como referencia visual y de comportamiento para el desarrollo del backend.
+- Backend (pyserial + FastAPI): implementado. Módulos `device.py` (comunicación SCPI), `main.py` (endpoints REST + WebSocket) y `models.py` (validación con Pydantic).
+- Conexión real con el dispositivo por USB: **verificada** contra hardware real (`multicomp pro,MP711135,25281600,FV:V2.0.0` vía `/dev/ttyUSB0`, adaptador CH340). Probados: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (stream a 5Hz) y validación de rangos (422 ante valores fuera de rango).
+- Integración del frontend con el backend real: pendiente.
 
 ## Stack
 
-- **Backend:** Python, PyVISA, FastAPI
-- **Comunicación con el dispositivo:** SCPI sobre USB
+- **Backend:** Python, pyserial, FastAPI
+- **Comunicación con el dispositivo:** SCPI sobre USB (puerto serie)
 - **Frontend:** HTML/JS (por definir)
 </content>
