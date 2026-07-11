@@ -25,6 +25,8 @@ El MP711135 es una fuente de alimentación DC de banco de un solo canal, con mul
 - **DMM integrado:** voltaje/corriente AC y DC, resistencia, capacitancia, continuidad y test de diodo
 
 > ⚠️ El manual de programación SCPI disponible solo documenta comandos de la **fuente de alimentación**, no del DMM. El modo multímetro de la interfaz depende de conseguir esa documentación adicional; hasta entonces queda fuera del alcance real de control.
+>
+> **Probado contra hardware real:** asumiendo que el DMM respondiera a comandos SCPI genéricos estilo 34401A (`MEASure:VOLTage:DC?`, `MEASure:CURRent:DC?`, `MEASure:ALL?`, `FUNCtion?`, `CONFigure?`, además de AC/resistencia/capacitancia/continuidad/diodo), se probaron por el mismo puerto serie con la fuente encendida a un voltaje conocido (3.3V, sin carga). Los comandos DC no dieron error, pero sus lecturas **coincidieron exactamente con la medida de la fuente** (no con las puntas físicas del DMM), y el resto (AC, resistencia, capacitancia, continuidad, diodo) devolvió `ERR`. Conclusión: el firmware no expone el DMM integrado por SCPI con este set de comandos — solo redirige al canal de medida de la fuente. Sin documentación SCPI específica del DMM, el modo multímetro no es controlable remotamente; probablemente solo funciona desde el panel físico.
 
 ### Comandos SCPI disponibles (fuente de alimentación)
 
