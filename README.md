@@ -9,7 +9,6 @@ Interfaz web para controlar y monitorizar en remoto la fuente de alimentación D
 - **Configuración de protecciones**: ajustar los umbrales de OVP (sobretensión) y OCP (sobrecorriente).
 - **Detección y aviso de fallos**: sobretensión, sobrecorriente o sobretemperatura, con indicación visual clara y opción de restablecer.
 - **Indicación del modo de regulación** activo (CV - tensión constante / CC - corriente constante).
-- **Modo multímetro** (si se documentan sus comandos SCPI, ver nota abajo): lectura de voltaje/corriente DC y AC, con función de congelar lectura (hold) y registro de máximo/mínimo.
 
 En resumen: la app sustituye el panel físico del MP711135 por un panel web, pensado para poder ajustar y vigilar la fuente desde el PC mientras se trabaja en el banco.
 
@@ -73,8 +72,8 @@ flowchart LR
 **Flujo:**
 1. El frontend hace peticiones REST a FastAPI para ajustar voltaje, corriente, límites OVP/OCP y encender/apagar la salida.
 2. Un WebSocket (`/ws/measurements`) empuja medidas (voltaje/corriente/potencia/estado) periódicamente para refrescar la UI en tiempo real sin polling constante.
-3. Tanto los endpoints REST como el WebSocket pasan por el módulo `device.py`, que centraliza la conexión PyVISA y traduce llamadas Python a comandos SCPI.
-4. `device.py` es el único punto que habla con el hardware por USB, evitando accesos concurrentes conflictivos al recurso VISA.
+3. Tanto los endpoints REST como el WebSocket pasan por el módulo `device.py`, que centraliza la conexión serie (pyserial) y traduce llamadas Python a comandos SCPI.
+4. `device.py` es el único punto que habla con el hardware por USB, evitando accesos concurrentes conflictivos al puerto serie.
 
 ## Cómo ejecutar la aplicación
 
@@ -118,5 +117,5 @@ El componente tiene una prop `backendUrl` (por defecto apunta a la IP fija de la
 
 - **Backend:** Python, pyserial, FastAPI
 - **Comunicación con el dispositivo:** SCPI sobre USB (puerto serie)
-- **Frontend:** HTML/JS (por definir)
+- **Frontend:** HTML/JS, conectado al backend por REST + WebSocket
 </content>
