@@ -1,5 +1,7 @@
 # MP711135 Tool
 
+![MP711135 Tool interface](docs/images/ui-screenshot.png)
+
 Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) DC power supply from the browser, instead of operating it from its physical controls. The backend talks to the device over **USB using SCPI commands** through a serial port (**pyserial**), and exposes that functionality to a frontend via a **FastAPI**-built API.
 
 ## What the application does
