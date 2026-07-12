@@ -79,7 +79,34 @@ flowchart LR
 
 Pensado para correr en la Raspberry Pi (u otro host) donde está conectado el MP711135 por USB; el navegador que controla la fuente puede estar en cualquier otro equipo de la misma red local.
 
-### 1. Regla udev (una sola vez por host)
+### Instalación automática (recomendado): `install.sh`
+
+Con el MP711135 conectado por USB:
+
+```bash
+./install.sh
+```
+
+No lo ejecutes con `sudo`: pedirá contraseña solo para los pasos puntuales que la necesitan. El script:
+
+1. Crea el venv e instala las dependencias del backend.
+2. Detecta el adaptador USB-serie conectado (`idVendor`/`idProduct`) e instala una regla udev que le da una ruta estable, `/dev/mp711135`, para que sobreviva a que el dispositivo cambie de `/dev/ttyUSBx` al reconectarlo. Si no hay ningún adaptador conectado al ejecutar el script, usa por defecto el ID del chip CH340 (el que trae el MP711135) — conéctalo y vuelve a ejecutar `install.sh`, o edita la regla a mano, si tu adaptador es otro.
+3. Añade tu usuario al grupo `dialout` si hace falta.
+4. Instala y arranca dos servicios systemd, `mp711135-backend` y `mp711135-frontend`, habilitados para arrancar solos en cada reinicio del equipo.
+
+Se puede volver a ejecutar sin problema (p.ej. tras un `git pull`): reinstala dependencias y reinicia los servicios con el código actualizado.
+
+Comandos útiles después de instalar:
+
+```bash
+systemctl status mp711135-backend mp711135-frontend   # estado
+journalctl -u mp711135-backend -f                      # logs en vivo del backend
+sudo systemctl restart mp711135-backend                # reiniciar tras un cambio manual
+```
+
+### Instalación manual (alternativa, paso a paso)
+
+#### 1. Regla udev (una sola vez por host)
 
 El adaptador USB-serie (CH340) no tiene número de serie, así que Linux no garantiza el mismo `/dev/ttyUSBx` tras cada reconexión (p.ej. puede pasar de `ttyUSB0` a `ttyUSB1`). Para que el backend siempre encuentre el dispositivo en la misma ruta, hay que crear una regla udev que genere un symlink fijo `/dev/mp711135`:
 
@@ -93,7 +120,7 @@ sudo udevadm trigger
 
 Verificar que aparece el symlink con el MP711135 conectado: `ls -l /dev/mp711135` (debe apuntar a un `ttyUSBx`). Si el adaptador USB-serie es distinto (no CH340), averigua su `idVendor`/`idProduct` con `lsusb` y ajusta la regla.
 
-### 2. Backend (FastAPI + pyserial)
+#### 2. Backend (FastAPI + pyserial)
 
 ```bash
 cd mp711135-tool
@@ -108,7 +135,7 @@ python3 -m venv .venv
 - `--host 0.0.0.0` es necesario para que otros equipos de la LAN puedan llegar a la API; con `127.0.0.1` (por defecto de uvicorn) solo sería accesible desde el propio host.
 - Si arranca sin errores, ya está hablando con el equipo real (abre la salida en modo remoto). Se puede verificar con `curl http://localhost:8000/idn`.
 
-### 3. Frontend
+#### 3. Frontend
 
 `frontend/MP711135.dc.html` es un fichero estático que debe servirse por HTTP (no abrirse con `file://`, porque el runtime hace `fetch()` sobre su propia URL). Desde el mismo host que el backend:
 
