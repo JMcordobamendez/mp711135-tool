@@ -148,6 +148,8 @@ Y desde el navegador (en la propia Pi o en otro equipo de la LAN): `http://<IP-d
 
 El componente tiene una prop `backendUrl` (por defecto apunta a la IP fija de la Pi en la red doméstica, `http://192.168.1.42:8000`) que es la URL de la API que usa el frontend — cámbiala en el `data-props` del `<script data-dc-script>` de `MP711135.dc.html` si el backend corre en otra IP o puerto.
 
+> **Importante:** tanto esa URL por defecto como la que uses para acceder desde el navegador (`http://<IP-de-la-Pi>:8080/...`) asumen que la Pi siempre tiene la misma IP. Como la Pi obtiene la IP por DHCP, hay que reservarla en el router (asignación fija por MAC) para que no cambie; si no, tarde o temprano el router le puede asignar otra y tanto el enlace guardado en el navegador como el `backendUrl` por defecto dejarían de apuntar al sitio correcto.
+
 ## Estado actual
 
 - `frontend/MP711135.dc.html` — interfaz de control conectada al backend real: `GET /state` al cargar, WebSocket `/ws/measurements` para medidas en vivo, y `PUT`/`POST` para ajustar setpoints, límites OVP/OCP y encender/apagar la salida. El modo multímetro simulado se retiró (ver nota sobre el DMM más arriba).
