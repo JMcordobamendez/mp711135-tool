@@ -76,12 +76,43 @@ flowchart LR
 3. Tanto los endpoints REST como el WebSocket pasan por el módulo `device.py`, que centraliza la conexión PyVISA y traduce llamadas Python a comandos SCPI.
 4. `device.py` es el único punto que habla con el hardware por USB, evitando accesos concurrentes conflictivos al recurso VISA.
 
+## Cómo ejecutar la aplicación
+
+Pensado para correr en la Raspberry Pi (u otro host) donde está conectado el MP711135 por USB; el navegador que controla la fuente puede estar en cualquier otro equipo de la misma red local.
+
+### 1. Backend (FastAPI + pyserial)
+
+```bash
+cd mp711135-tool
+python3 -m venv .venv
+.venv/bin/pip install -r backend/requirements.txt
+.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+- El puerto serie por defecto es `/dev/ttyUSB0`. El usuario que ejecuta el comando debe pertenecer al grupo `dialout` para acceder a él sin `sudo`.
+- Se puede sobreescribir con variables de entorno si hace falta: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (ver `backend/config.py`).
+- `--host 0.0.0.0` es necesario para que otros equipos de la LAN puedan llegar a la API; con `127.0.0.1` (por defecto de uvicorn) solo sería accesible desde el propio host.
+- Si arranca sin errores, ya está hablando con el equipo real (abre la salida en modo remoto). Se puede verificar con `curl http://localhost:8000/idn`.
+
+### 2. Frontend
+
+`frontend/MP711135.dc.html` es un fichero estático que debe servirse por HTTP (no abrirse con `file://`, porque el runtime hace `fetch()` sobre su propia URL). Desde el mismo host que el backend:
+
+```bash
+cd frontend
+python3 -m http.server 8080 --bind 0.0.0.0
+```
+
+Y desde el navegador (en la propia Pi o en otro equipo de la LAN): `http://<IP-de-la-Pi>:8080/MP711135.dc.html`.
+
+El componente tiene una prop `backendUrl` (por defecto apunta a la IP fija de la Pi en la red doméstica, `http://192.168.1.42:8000`) que es la URL de la API que usa el frontend — cámbiala en el `data-props` del `<script data-dc-script>` de `MP711135.dc.html` si el backend corre en otra IP o puerto.
+
 ## Estado actual
 
-- `frontend/MP711135.dc.html` — mockup funcional de la interfaz (fuente + multímetro), con **datos simulados**, no conectado todavía al backend real. Sirve como referencia visual y de comportamiento para el desarrollo del backend.
-- Backend (pyserial + FastAPI): implementado. Módulos `device.py` (comunicación SCPI), `main.py` (endpoints REST + WebSocket) y `models.py` (validación con Pydantic).
+- `frontend/MP711135.dc.html` — interfaz de control conectada al backend real: `GET /state` al cargar, WebSocket `/ws/measurements` para medidas en vivo, y `PUT`/`POST` para ajustar setpoints, límites OVP/OCP y encender/apagar la salida. El modo multímetro simulado se retiró (ver nota sobre el DMM más arriba).
+- Backend (pyserial + FastAPI): implementado. Módulos `device.py` (comunicación SCPI), `main.py` (endpoints REST + WebSocket) y `models.py` (validación con Pydantic). Incluye CORS abierto (`allow_origins=["*"]`) para que el frontend, servido desde otro origen/puerto, pueda llamar a la API.
 - Conexión real con el dispositivo por USB: **verificada** contra hardware real (`multicomp pro,MP711135,25281600,FV:V2.0.0` vía `/dev/ttyUSB0`, adaptador CH340). Probados: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (stream a 5Hz) y validación de rangos (422 ante valores fuera de rango).
-- Integración del frontend con el backend real: pendiente.
+- Integración del frontend con el backend real: **hecha y probada** en LAN (backend en la Raspberry Pi, navegador en otro equipo).
 
 ## Stack
 
