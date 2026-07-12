@@ -42,23 +42,46 @@ def _measurement_response(m: Measurement) -> MeasurementResponse:
     )
 
 
+async def _broadcast(app: FastAPI, payload: dict) -> None:
+    stale = []
+    for ws in app.state.ws_clients:
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            stale.append(ws)
+    for ws in stale:
+        app.state.ws_clients.discard(ws)
+
+
+async def _reconnect_device(app: FastAPI) -> bool:
+    device = app.state.device
+    async with app.state.device_lock:
+        try:
+            await asyncio.to_thread(device.close)
+            await asyncio.to_thread(device.open)
+            await asyncio.to_thread(device.remote)
+        except DeviceError:
+            return False
+    return True
+
+
 async def poll_loop(app: FastAPI) -> None:
     interval = 1 / cfg.POLL_HZ
     while True:
         await asyncio.sleep(interval)
+        if not app.state.device_connected:
+            if not await _reconnect_device(app):
+                continue
+            app.state.device_connected = True
         try:
             measurement = await call(app, app.state.device.measure_all_info)
         except DeviceError:
+            app.state.device_connected = False
+            await _broadcast(app, {"device_connected": False})
             continue
         payload = _measurement_response(measurement).model_dump()
-        stale = []
-        for ws in app.state.ws_clients:
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                stale.append(ws)
-        for ws in stale:
-            app.state.ws_clients.discard(ws)
+        payload["device_connected"] = True
+        await _broadcast(app, payload)
 
 
 @asynccontextmanager
@@ -68,6 +91,7 @@ async def lifespan(app: FastAPI):
     device.remote()
     app.state.device = device
     app.state.device_lock = asyncio.Lock()
+    app.state.device_connected = True
     app.state.ws_clients = set()
     poll_task = asyncio.create_task(poll_loop(app))
     yield

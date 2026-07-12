@@ -79,7 +79,21 @@ flowchart LR
 
 Pensado para correr en la Raspberry Pi (u otro host) donde está conectado el MP711135 por USB; el navegador que controla la fuente puede estar en cualquier otro equipo de la misma red local.
 
-### 1. Backend (FastAPI + pyserial)
+### 1. Regla udev (una sola vez por host)
+
+El adaptador USB-serie (CH340) no tiene número de serie, así que Linux no garantiza el mismo `/dev/ttyUSBx` tras cada reconexión (p.ej. puede pasar de `ttyUSB0` a `ttyUSB1`). Para que el backend siempre encuentre el dispositivo en la misma ruta, hay que crear una regla udev que genere un symlink fijo `/dev/mp711135`:
+
+```bash
+sudo tee /etc/udev/rules.d/99-mp711135.rules <<'EOF'
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="mp711135"
+EOF
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Verificar que aparece el symlink con el MP711135 conectado: `ls -l /dev/mp711135` (debe apuntar a un `ttyUSBx`). Si el adaptador USB-serie es distinto (no CH340), averigua su `idVendor`/`idProduct` con `lsusb` y ajusta la regla.
+
+### 2. Backend (FastAPI + pyserial)
 
 ```bash
 cd mp711135-tool
@@ -88,12 +102,13 @@ python3 -m venv .venv
 .venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-- El puerto serie por defecto es `/dev/ttyUSB0`. El usuario que ejecuta el comando debe pertenecer al grupo `dialout` para acceder a él sin `sudo`.
+- El puerto serie por defecto es `/dev/mp711135` (el symlink estable creado arriba). El usuario que ejecuta el comando debe pertenecer al grupo `dialout` para acceder a él sin `sudo`.
 - Se puede sobreescribir con variables de entorno si hace falta: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (ver `backend/config.py`).
+- Si se desconecta el USB, el indicador **USB · SCPI** de la interfaz pasa a rojo (el backend detecta el fallo al leer/escribir por el puerto serie y lo notifica por WebSocket). El backend reintenta reabrir `/dev/mp711135` en cada ciclo de sondeo; al reconectar el cable, se recupera solo sin reiniciar nada.
 - `--host 0.0.0.0` es necesario para que otros equipos de la LAN puedan llegar a la API; con `127.0.0.1` (por defecto de uvicorn) solo sería accesible desde el propio host.
 - Si arranca sin errores, ya está hablando con el equipo real (abre la salida en modo remoto). Se puede verificar con `curl http://localhost:8000/idn`.
 
-### 2. Frontend
+### 3. Frontend
 
 `frontend/MP711135.dc.html` es un fichero estático que debe servirse por HTTP (no abrirse con `file://`, porque el runtime hace `fetch()` sobre su propia URL). Desde el mismo host que el backend:
 

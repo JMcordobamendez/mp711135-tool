@@ -217,6 +217,7 @@ class Component extends DCLogic {
     this.debounceTimers = {};
     this.state = {
       connected:false,
+      deviceConnected:true,
       loading:true,
       outputOn:false,
       setV:0, setI:0,
@@ -246,7 +247,7 @@ class Component extends DCLogic {
   componentDidUpdate(prevProps){
     if(prevProps.backendUrl !== this.props.backendUrl){
       this.closeWs();
-      this.setState({ connected:false, loading:true });
+      this.setState({ connected:false, deviceConnected:true, loading:true });
       this.loadState();
       this.connectWs();
     }
@@ -287,7 +288,11 @@ class Component extends DCLogic {
     this.ws = ws;
     ws.onopen = () => this.setState({ connected:true });
     ws.onmessage = (ev) => {
-      try{ this.applyMeasurement(JSON.parse(ev.data)); }catch(e){}
+      try{
+        const m = JSON.parse(ev.data);
+        if(m.device_connected === false){ this.setState({ deviceConnected:false }); return; }
+        this.applyMeasurement(m);
+      }catch(e){}
     };
     ws.onclose = () => { this.setState({ connected:false }); this.scheduleReconnect(); };
     ws.onerror = () => ws.close();
@@ -310,7 +315,7 @@ class Component extends DCLogic {
     this.push(this.bufI, now, m.current);
     this.setState({
       measV:m.voltage, measI:m.current, measW:m.power,
-      reg:m.mode, fault, outputOn, connected:true,
+      reg:m.mode, fault, outputOn, connected:true, deviceConnected:true,
     });
     this.drawGraph();
   }
@@ -472,15 +477,17 @@ class Component extends DCLogic {
     else if(st.reg==='CC'){ statusStyle = statusBase+'background:#241a08;border:1px solid #3a2c10;color:#ffb020;'; statusText = 'CURRENT LIMIT (CC)'; }
     else { statusStyle = statusBase+'background:#12211b;border:1px solid #17352a;color:#2ee6a6;'; statusText = 'VOLTAGE REGULATION (CV)'; }
 
-    // connection status — reflects the WebSocket link to the backend (not the output relay)
-    const connected = st.connected;
-    const connDotStyle = connected
+    // USB · SCPI indicator — reflects whether the backend can actually reach
+    // the device over serial, not just whether the browser's WebSocket to the
+    // backend is open (a WS can stay open while the USB cable is unplugged).
+    const usbLinked = st.connected && st.deviceConnected;
+    const connDotStyle = usbLinked
       ? 'width:8px;height:8px;border-radius:50%;background:#2ee6a6;box-shadow:0 0 8px #2ee6a6;'
       : 'width:8px;height:8px;border-radius:50%;background:#ff4d5e;box-shadow:0 0 8px #ff4d5e;';
-    const connTextStyle = connected
+    const connTextStyle = usbLinked
       ? 'font:500 10px/1.3 \'IBM Plex Mono\';color:#2ee6a6;letter-spacing:.1em;margin-top:3px;'
       : 'font:500 10px/1.3 \'IBM Plex Mono\';color:#ff8b96;letter-spacing:.1em;margin-top:3px;';
-    const connText = connected ? 'CONNECTED' : 'NO SIGNAL';
+    const connText = !st.connected ? 'NO SIGNAL' : (st.deviceConnected ? 'CONNECTED' : 'DISCONNECTED');
 
     const now = new Date(st.now);
     const clockStr = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
