@@ -201,7 +201,7 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{
- &quot;backendUrl&quot;: {&quot;editor&quot;:&quot;string&quot;,&quot;default&quot;:&quot;http://localhost:8000&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Connection&quot;},
+ &quot;backendUrl&quot;: {&quot;editor&quot;:&quot;string&quot;,&quot;default&quot;:&quot;http://192.168.1.42:8000&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Connection&quot;},
  &quot;graphWindowSec&quot;: {&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:30,&quot;min&quot;:10,&quot;max&quot;:90,&quot;step&quot;:5,&quot;unit&quot;:&quot; s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Graph&quot;},
  &quot;showGrid&quot;: {&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Graph&quot;}
 }">
@@ -220,7 +220,7 @@ class Component extends DCLogic {
       loading:true,
       outputOn:false,
       setV:0, setI:0,
-      ovp:0, ocp:0,
+      ovp:61.00, ocp:10.10,
       measV:0, measI:0, measW:0,
       reg:'STANDBY',
       fault:null,
