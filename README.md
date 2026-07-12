@@ -162,3 +162,7 @@ The component has a `backendUrl` prop (by default pointing to the Pi's fixed IP 
 - **Backend:** Python, pyserial, FastAPI
 - **Device communication:** SCPI over USB (serial port)
 - **Frontend:** HTML/JS, connected to the backend via REST + WebSocket
+
+## License
+
+This project is licensed under the [MIT License](LICENSE) — free to use, copy, modify and distribute, including for commercial purposes.
