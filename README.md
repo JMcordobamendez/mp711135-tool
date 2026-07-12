@@ -1,114 +1,114 @@
 # MP711135 Tool
 
-Interfaz web para controlar y monitorizar en remoto la fuente de alimentación DC **MP711135** (Multicomp Pro) desde el navegador, en vez de operarla desde sus controles físicos. El backend habla con el dispositivo por **USB usando comandos SCPI** a través de un puerto serie (**pyserial**), y expone esa funcionalidad a un frontend mediante una API construida con **FastAPI**.
+Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) DC power supply from the browser, instead of operating it from its physical controls. The backend talks to the device over **USB using SCPI commands** through a serial port (**pyserial**), and exposes that functionality to a frontend via a **FastAPI**-built API.
 
-## Qué hace la aplicación
+## What the application does
 
-- **Monitorización en tiempo real** de la salida: voltaje, corriente y potencia medidos, con gráfica de su evolución en el tiempo.
-- **Control de la salida**: fijar tensión y límite de corriente, y encender/apagar la salida.
-- **Configuración de protecciones**: ajustar los umbrales de OVP (sobretensión) y OCP (sobrecorriente).
-- **Detección y aviso de fallos**: sobretensión, sobrecorriente o sobretemperatura, con indicación visual clara y opción de restablecer.
-- **Indicación del modo de regulación** activo (CV - tensión constante / CC - corriente constante).
+- **Real-time monitoring** of the output: measured voltage, current and power, with a graph of their evolution over time.
+- **Output control**: set voltage and current limit, and turn the output on/off.
+- **Protection configuration**: adjust OVP (overvoltage) and OCP (overcurrent) thresholds.
+- **Fault detection and warning**: overvoltage, overcurrent or overtemperature, with clear visual indication and a reset option.
+- **Regulation mode indication**: shows the active mode (CV - constant voltage / CC - constant current).
 
-En resumen: la app sustituye el panel físico del MP711135 por un panel web, pensado para poder ajustar y vigilar la fuente desde el PC mientras se trabaja en el banco.
+In short: the app replaces the MP711135's physical panel with a web panel, designed to adjust and monitor the power supply from the PC while working at the bench.
 
-## El dispositivo
+## The device
 
-El MP711135 es una fuente de alimentación DC de banco de un solo canal, con multímetro (DMM) integrado.
+The MP711135 is a single-channel bench DC power supply with a built-in multimeter (DMM).
 
-- **Salida:** 0-60V / 0-10A, 300W
-- **Resolución:** 10mV / 1mA (ajuste y lectura)
-- **Protecciones:** OVP 0-61V, OCP 0-10.1A, OTP 85°C
-- **Comunicación:** USB, compatible con SCPI
-- **Pantalla:** LCD color 2.8" (240×320)
-- **DMM integrado:** voltaje/corriente AC y DC, resistencia, capacitancia, continuidad y test de diodo
+- **Output:** 0-60V / 0-10A, 300W
+- **Resolution:** 10mV / 1mA (setting and reading)
+- **Protections:** OVP 0-61V, OCP 0-10.1A, OTP 85°C
+- **Communication:** USB, SCPI-compatible
+- **Display:** 2.8" color LCD (240×320)
+- **Built-in DMM:** AC/DC voltage and current, resistance, capacitance, continuity and diode test
 
-> ⚠️ El manual de programación SCPI disponible solo documenta comandos de la **fuente de alimentación**, no del DMM. El modo multímetro de la interfaz depende de conseguir esa documentación adicional; hasta entonces queda fuera del alcance real de control.
+> ⚠️ The available SCPI programming manual only documents **power supply** commands, not the DMM's. The interface's multimeter mode depends on obtaining that additional documentation; until then it remains out of the actual scope of control.
 >
-> **Probado contra hardware real:** asumiendo que el DMM respondiera a comandos SCPI genéricos estilo 34401A (`MEASure:VOLTage:DC?`, `MEASure:CURRent:DC?`, `MEASure:ALL?`, `FUNCtion?`, `CONFigure?`, además de AC/resistencia/capacitancia/continuidad/diodo), se probaron por el mismo puerto serie con la fuente encendida a un voltaje conocido (3.3V, sin carga). Los comandos DC no dieron error, pero sus lecturas **coincidieron exactamente con la medida de la fuente** (no con las puntas físicas del DMM), y el resto (AC, resistencia, capacitancia, continuidad, diodo) devolvió `ERR`. Conclusión: el firmware no expone el DMM integrado por SCPI con este set de comandos — solo redirige al canal de medida de la fuente. Sin documentación SCPI específica del DMM, el modo multímetro no es controlable remotamente; probablemente solo funciona desde el panel físico.
+> **Tested against real hardware:** assuming the DMM would respond to generic 34401A-style SCPI commands (`MEASure:VOLTage:DC?`, `MEASure:CURRent:DC?`, `MEASure:ALL?`, `FUNCtion?`, `CONFigure?`, plus AC/resistance/capacitance/continuity/diode), they were tested over the same serial port with the supply powered on at a known voltage (3.3V, no load). The DC commands returned no error, but their readings **exactly matched the power supply's own measurement** (not the DMM's physical probes), and the rest (AC, resistance, capacitance, continuity, diode) returned `ERR`. Conclusion: the firmware does not expose the built-in DMM over SCPI with this command set — it only redirects to the power supply's measurement channel. Without DMM-specific SCPI documentation, the multimeter mode is not remotely controllable; it likely only works from the physical panel.
 
-### Comandos SCPI disponibles (fuente de alimentación)
+### Available SCPI commands (power supply)
 
-**Medición**
+**Measurement**
 - `MEASure:VOLTage?` / `MEASure:CURRent?` / `MEASure:POWer?`
-- `MEASure:ALL?` — voltaje, corriente y potencia en una sola consulta
-- `MEASure:ALL:INFO?` — además incluye estado de fallos (OVP/OCP/OTP) y modo de operación (standby/CV/CC/fault)
+- `MEASure:ALL?` — voltage, current and power in a single query
+- `MEASure:ALL:INFO?` — also includes fault status (OVP/OCP/OTP) and operating mode (standby/CV/CC/fault)
 
-**Configuración de salida**
+**Output configuration**
 - `OUTPut {ON|OFF}` / `OUTPut?`
 - `CURRent <value>` / `CURRent?`
 - `CURRent:LIMit <value>` / `CURRent:LIMit?` (OCP)
 - `VOLTage <value>` / `VOLTage?`
 - `VOLTage:LIMit <value>` / `VOLTage:LIMit?` (OVP)
 
-**Sistema**
+**System**
 - `SYSTem:LOCal` / `SYSTem:REMote`
 - `*IDN?` / `*RST`
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Cliente["Navegador"]
-        UI["Frontend HTML/JS\n(medidas + controles)"]
+    subgraph Cliente["Browser"]
+        UI["HTML/JS Frontend\n(measurements + controls)"]
     end
 
-    subgraph Servidor["Backend Python"]
-        API["FastAPI\nendpoints REST"]
+    subgraph Servidor["Python Backend"]
+        API["FastAPI\nREST endpoints"]
         WS["WebSocket\n/ws/measurements"]
-        DEV["Módulo device.py\n(wrapper pyserial)"]
+        DEV["device.py module\n(pyserial wrapper)"]
     end
 
-    HW["MP711135\n(SCPI sobre USB)"]
+    HW["MP711135\n(SCPI over USB)"]
 
     UI -- "GET/POST\n/voltage /current /output ..." --> API
-    UI <-- "medidas en tiempo real" --> WS
+    UI <-- "real-time measurements" --> WS
     API --> DEV
     WS --> DEV
-    DEV -- "comandos SCPI\n(pyserial)" --> HW
-    HW -- "respuestas SCPI" --> DEV
+    DEV -- "SCPI commands\n(pyserial)" --> HW
+    HW -- "SCPI responses" --> DEV
 ```
 
-**Flujo:**
-1. El frontend hace peticiones REST a FastAPI para ajustar voltaje, corriente, límites OVP/OCP y encender/apagar la salida.
-2. Un WebSocket (`/ws/measurements`) empuja medidas (voltaje/corriente/potencia/estado) periódicamente para refrescar la UI en tiempo real sin polling constante.
-3. Tanto los endpoints REST como el WebSocket pasan por el módulo `device.py`, que centraliza la conexión serie (pyserial) y traduce llamadas Python a comandos SCPI.
-4. `device.py` es el único punto que habla con el hardware por USB, evitando accesos concurrentes conflictivos al puerto serie.
+**Flow:**
+1. The frontend makes REST requests to FastAPI to adjust voltage, current, OVP/OCP limits and turn the output on/off.
+2. A WebSocket (`/ws/measurements`) pushes measurements (voltage/current/power/status) periodically to refresh the UI in real time without constant polling.
+3. Both the REST endpoints and the WebSocket go through the `device.py` module, which centralizes the serial connection (pyserial) and translates Python calls into SCPI commands.
+4. `device.py` is the only point that talks to the hardware over USB, avoiding conflicting concurrent access to the serial port.
 
-## Cómo ejecutar la aplicación
+## How to run the application
 
-Pensado para correr en la Raspberry Pi (u otro host) donde está conectado el MP711135 por USB; el navegador que controla la fuente puede estar en cualquier otro equipo de la misma red local.
+Designed to run on the Raspberry Pi (or another host) where the MP711135 is connected via USB; the browser controlling the power supply can be on any other machine on the same local network.
 
-### Instalación automática (recomendado): `install.sh`
+### Automatic installation (recommended): `install.sh`
 
-Con el MP711135 conectado por USB:
+With the MP711135 connected via USB:
 
 ```bash
 ./install.sh
 ```
 
-No lo ejecutes con `sudo`: pedirá contraseña solo para los pasos puntuales que la necesitan. El script:
+Don't run it with `sudo`: it will only ask for a password for the specific steps that need it. The script:
 
-1. Crea el venv e instala las dependencias del backend.
-2. Detecta el adaptador USB-serie conectado (`idVendor`/`idProduct`) e instala una regla udev que le da una ruta estable, `/dev/mp711135`, para que sobreviva a que el dispositivo cambie de `/dev/ttyUSBx` al reconectarlo. Si no hay ningún adaptador conectado al ejecutar el script, usa por defecto el ID del chip CH340 (el que trae el MP711135) — conéctalo y vuelve a ejecutar `install.sh`, o edita la regla a mano, si tu adaptador es otro.
-3. Añade tu usuario al grupo `dialout` si hace falta.
-4. Instala y arranca dos servicios systemd, `mp711135-backend` y `mp711135-frontend`, habilitados para arrancar solos en cada reinicio del equipo.
+1. Creates the venv and installs the backend dependencies.
+2. Detects the connected USB-serial adapter (`idVendor`/`idProduct`) and installs a udev rule that gives it a stable path, `/dev/mp711135`, so it survives the device switching `/dev/ttyUSBx` on reconnection. If no adapter is connected when the script runs, it defaults to the CH340 chip ID (the one shipped with the MP711135) — connect it and re-run `install.sh`, or edit the rule by hand if your adapter is different.
+3. Adds your user to the `dialout` group if needed.
+4. Installs and starts two systemd services, `mp711135-backend` and `mp711135-frontend`, enabled to start automatically on every reboot.
 
-Se puede volver a ejecutar sin problema (p.ej. tras un `git pull`): reinstala dependencias y reinicia los servicios con el código actualizado.
+It can be safely re-run (e.g. after a `git pull`): it reinstalls dependencies and restarts the services with the updated code.
 
-Comandos útiles después de instalar:
+Useful commands after installing:
 
 ```bash
-systemctl status mp711135-backend mp711135-frontend   # estado
-journalctl -u mp711135-backend -f                      # logs en vivo del backend
-sudo systemctl restart mp711135-backend                # reiniciar tras un cambio manual
+systemctl status mp711135-backend mp711135-frontend   # status
+journalctl -u mp711135-backend -f                      # live backend logs
+sudo systemctl restart mp711135-backend                # restart after a manual change
 ```
 
-### Instalación manual (alternativa, paso a paso)
+### Manual installation (alternative, step by step)
 
-#### 1. Regla udev (una sola vez por host)
+#### 1. udev rule (once per host)
 
-El adaptador USB-serie (CH340) no tiene número de serie, así que Linux no garantiza el mismo `/dev/ttyUSBx` tras cada reconexión (p.ej. puede pasar de `ttyUSB0` a `ttyUSB1`). Para que el backend siempre encuentre el dispositivo en la misma ruta, hay que crear una regla udev que genere un symlink fijo `/dev/mp711135`:
+The USB-serial adapter (CH340) has no serial number, so Linux doesn't guarantee the same `/dev/ttyUSBx` after each reconnection (e.g. it may switch from `ttyUSB0` to `ttyUSB1`). For the backend to always find the device at the same path, you need to create a udev rule that generates a fixed `/dev/mp711135` symlink:
 
 ```bash
 sudo tee /etc/udev/rules.d/99-mp711135.rules <<'EOF'
@@ -118,7 +118,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
 
-Verificar que aparece el symlink con el MP711135 conectado: `ls -l /dev/mp711135` (debe apuntar a un `ttyUSBx`). Si el adaptador USB-serie es distinto (no CH340), averigua su `idVendor`/`idProduct` con `lsusb` y ajusta la regla.
+Verify the symlink appears with the MP711135 connected: `ls -l /dev/mp711135` (it should point to a `ttyUSBx`). If the USB-serial adapter is different (not CH340), find its `idVendor`/`idProduct` with `lsusb` and adjust the rule.
 
 #### 2. Backend (FastAPI + pyserial)
 
@@ -129,37 +129,36 @@ python3 -m venv .venv
 .venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-- El puerto serie por defecto es `/dev/mp711135` (el symlink estable creado arriba). El usuario que ejecuta el comando debe pertenecer al grupo `dialout` para acceder a él sin `sudo`.
-- Se puede sobreescribir con variables de entorno si hace falta: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (ver `backend/config.py`).
-- Si se desconecta el USB, el indicador **USB · SCPI** de la interfaz pasa a rojo (el backend detecta el fallo al leer/escribir por el puerto serie y lo notifica por WebSocket). El backend reintenta reabrir `/dev/mp711135` en cada ciclo de sondeo; al reconectar el cable, se recupera solo sin reiniciar nada.
-- `--host 0.0.0.0` es necesario para que otros equipos de la LAN puedan llegar a la API; con `127.0.0.1` (por defecto de uvicorn) solo sería accesible desde el propio host.
-- Si arranca sin errores, ya está hablando con el equipo real (abre la salida en modo remoto). Se puede verificar con `curl http://localhost:8000/idn`.
+- The default serial port is `/dev/mp711135` (the stable symlink created above). The user running the command must belong to the `dialout` group to access it without `sudo`.
+- It can be overridden with environment variables if needed: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (see `backend/config.py`).
+- If the USB gets disconnected, the interface's **USB · SCPI** indicator turns red (the backend detects the failure when reading/writing over the serial port and notifies it via WebSocket). The backend retries reopening `/dev/mp711135` on every polling cycle; when the cable is reconnected, it recovers on its own without restarting anything.
+- `--host 0.0.0.0` is necessary so other machines on the LAN can reach the API; with `127.0.0.1` (uvicorn's default) it would only be accessible from the host itself.
+- If it starts without errors, it's already talking to the real device (it opens the output in remote mode). You can verify with `curl http://localhost:8000/idn`.
 
 #### 3. Frontend
 
-`frontend/MP711135.dc.html` es un fichero estático que debe servirse por HTTP (no abrirse con `file://`, porque el runtime hace `fetch()` sobre su propia URL). Desde el mismo host que el backend:
+`frontend/MP711135.dc.html` is a static file that must be served over HTTP (not opened with `file://`, because the runtime does `fetch()` against its own URL). From the same host as the backend:
 
 ```bash
 cd frontend
 python3 -m http.server 8080 --bind 0.0.0.0
 ```
 
-Y desde el navegador (en la propia Pi o en otro equipo de la LAN): `http://<IP-de-la-Pi>:8080/MP711135.dc.html`.
+And from the browser (on the Pi itself or another machine on the LAN): `http://<Pi-IP>:8080/MP711135.dc.html`.
 
-El componente tiene una prop `backendUrl` (por defecto apunta a la IP fija de la Pi en la red doméstica, `http://192.168.1.42:8000`) que es la URL de la API que usa el frontend — cámbiala en el `data-props` del `<script data-dc-script>` de `MP711135.dc.html` si el backend corre en otra IP o puerto.
+The component has a `backendUrl` prop (by default pointing to the Pi's fixed IP on the home network, `http://192.168.1.42:8000`) which is the API URL the frontend uses — change it in the `data-props` of the `<script data-dc-script>` in `MP711135.dc.html` if the backend runs on a different IP or port.
 
-> **Importante:** tanto esa URL por defecto como la que uses para acceder desde el navegador (`http://<IP-de-la-Pi>:8080/...`) asumen que la Pi siempre tiene la misma IP. Como la Pi obtiene la IP por DHCP, hay que reservarla en el router (asignación fija por MAC) para que no cambie; si no, tarde o temprano el router le puede asignar otra y tanto el enlace guardado en el navegador como el `backendUrl` por defecto dejarían de apuntar al sitio correcto.
+> **Important:** both that default URL and the one you use to access from the browser (`http://<Pi-IP>:8080/...`) assume the Pi always has the same IP. Since the Pi gets its IP via DHCP, it must be reserved in the router (fixed assignment by MAC) so it doesn't change; otherwise, sooner or later the router might assign it a different one and both the link saved in the browser and the default `backendUrl` would stop pointing to the right place.
 
-## Estado actual
+## Current status
 
-- `frontend/MP711135.dc.html` — interfaz de control conectada al backend real: `GET /state` al cargar, WebSocket `/ws/measurements` para medidas en vivo, y `PUT`/`POST` para ajustar setpoints, límites OVP/OCP y encender/apagar la salida. El modo multímetro simulado se retiró (ver nota sobre el DMM más arriba).
-- Backend (pyserial + FastAPI): implementado. Módulos `device.py` (comunicación SCPI), `main.py` (endpoints REST + WebSocket) y `models.py` (validación con Pydantic). Incluye CORS abierto (`allow_origins=["*"]`) para que el frontend, servido desde otro origen/puerto, pueda llamar a la API.
-- Conexión real con el dispositivo por USB: **verificada** contra hardware real (`multicomp pro,MP711135,25281600,FV:V2.0.0` vía `/dev/ttyUSB0`, adaptador CH340). Probados: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (stream a 5Hz) y validación de rangos (422 ante valores fuera de rango).
-- Integración del frontend con el backend real: **hecha y probada** en LAN (backend en la Raspberry Pi, navegador en otro equipo).
+- `frontend/MP711135.dc.html` — control interface connected to the real backend: `GET /state` on load, WebSocket `/ws/measurements` for live measurements, and `PUT`/`POST` to adjust setpoints, OVP/OCP limits and turn the output on/off. The simulated multimeter mode was removed (see the note about the DMM above).
+- Backend (pyserial + FastAPI): implemented. Modules `device.py` (SCPI communication), `main.py` (REST endpoints + WebSocket) and `models.py` (Pydantic validation). Includes open CORS (`allow_origins=["*"]`) so the frontend, served from a different origin/port, can call the API.
+- Real connection to the device over USB: **verified** against real hardware (`multicomp pro,MP711135,25281600,FV:V2.0.0` via `/dev/ttyUSB0`, CH340 adapter). Tested: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (5Hz stream) and range validation (422 for out-of-range values).
+- Frontend integration with the real backend: **done and tested** on the LAN (backend on the Raspberry Pi, browser on another machine).
 
 ## Stack
 
 - **Backend:** Python, pyserial, FastAPI
-- **Comunicación con el dispositivo:** SCPI sobre USB (puerto serie)
-- **Frontend:** HTML/JS, conectado al backend por REST + WebSocket
-</content>
+- **Device communication:** SCPI over USB (serial port)
+- **Frontend:** HTML/JS, connected to the backend via REST + WebSocket
