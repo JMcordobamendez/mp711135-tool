@@ -3,6 +3,7 @@ import contextlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import config as cfg
@@ -79,6 +80,17 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# The frontend is a static file served from a different origin/port than this
+# API (e.g. opened directly from disk or via a dev static server), so the
+# browser enforces CORS on every fetch() call. This is a single-user bench
+# tool, not a multi-tenant service, so allowing any origin is acceptable.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(DeviceError)
