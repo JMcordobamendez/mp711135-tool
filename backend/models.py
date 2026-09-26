@@ -66,3 +66,36 @@ class StateResponse(BaseModel):
     voltage_limit: float
     current_limit: float
     measurement: MeasurementResponse
+
+
+class SetpointsResponse(BaseModel):
+    output: bool
+    voltage_setpoint: float
+    current_setpoint: float
+    voltage_limit: float
+    current_limit: float
+
+
+class SequenceStep(BaseModel):
+    voltage: float = Field(ge=0, le=60)
+    # None leaves the current limit / output state as they are.
+    current: float | None = Field(default=None, ge=0, le=10)
+    output: bool | None = None
+    # Seconds to ramp linearly from the previous voltage to `voltage`.
+    ramp_s: float = Field(default=0, ge=0, le=3600)
+    # Seconds to stay at `voltage` once reached.
+    hold_s: float = Field(default=0, ge=0, le=86400)
+
+
+class SequenceRequest(BaseModel):
+    steps: list[SequenceStep] = Field(min_length=1, max_length=100)
+    repeat: int = Field(default=1, ge=1, le=10000)
+
+
+class SequenceStatus(BaseModel):
+    running: bool = False
+    step: int | None = None  # 0-based index of the step being executed
+    cycle: int | None = None  # 0-based repetition
+    total_steps: int = 0
+    repeat: int = 0
+    error: str | None = None

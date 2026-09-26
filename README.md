@@ -1,18 +1,44 @@
 # MP711135 Tool
 
-![MP711135 Tool interface](docs/images/ui-screenshot.png)
+<p>
+  <img src="docs/images/ui-screenshot.png" alt="MP711135 Tool, desktop" width="74%">
+  <img src="docs/images/ui-mobile.png" alt="MP711135 Tool, phone" width="22%">
+</p>
 
 Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) DC power supply from the browser, instead of operating it from its physical controls. The backend talks to the device over **USB using SCPI commands** through a serial port (**pyserial**), and exposes that functionality to a frontend via a **FastAPI**-built API.
 
 ## What the application does
 
 - **Real-time monitoring** of the output: measured voltage, current and power, with a graph of their evolution over time.
-- **Output control**: set voltage and current limit, and turn the output on/off.
+- **Output control**: set voltage and current limit (−/+ buttons, slider, or type the value and press Enter), and turn the output on/off.
+- **Presets**: one-click voltage/current combinations (3.3 V, 5 V, 12 V… or your own with **+ SAVE**), stored in the browser.
+- **Front-panel sync**: setpoints and limits changed with the supply's own knobs show up in the web UI within about a second.
+- **Data logger**: record V/I/P while the page is open, with energy (Wh) and charge (Ah) counters, and export it as CSV.
+- **Sequences and ramps**: a list of steps (voltage, optional current limit, output on/off, ramp time, hold time) with repeats, run by the backend so it keeps going if the browser is closed, and aborted if a protection trips. **SOFT START** fills in a 0 V → setpoint ramp.
+- **Works on a phone**: the layout stacks into one column on narrow screens.
 - **Protection configuration**: adjust OVP (overvoltage) and OCP (overcurrent) thresholds.
 - **Fault detection and warning**: overvoltage, overcurrent or overtemperature, with clear visual indication and a reset option.
 - **Regulation mode indication**: shows the active mode (CV - constant voltage / CC - constant current).
 
 In short: the app replaces the MP711135's physical panel with a web panel, designed to adjust and monitor the power supply from the PC while working at the bench.
+
+### Using sequences and ramps
+
+The **SEQUENCE · RAMPS** panel (below the graph) runs a list of steps, top to bottom. Each step:
+
+1. switches the output if **OUTPUT** is `ON`/`OFF` (`—` leaves it as it is; click to cycle),
+2. sets the current limit if **CURR A** has a value (empty = keep),
+3. goes to **VOLT V** — jumping if **RAMP s** is 0, or rising/falling linearly over **RAMP s** seconds from the previous step's voltage,
+4. stays there for **HOLD s** seconds, then moves on.
+
+**REPEAT** runs the whole list several times; after the last step the supply stays at the last values. **▶ START** / **■ STOP** start and stop it, and it also stops by itself if OVP, OCP or OTP trips. Example — ramp from 0 to 12 V in 10 s:
+
+| # | VOLT V | CURR A | OUTPUT | RAMP s | HOLD s |
+|---|---|---|---|---|---|
+| 1 | 0 | 1.5 | ON | 0 | 0 |
+| 2 | 12 | | — | 10 | 0 |
+
+**SOFT START** fills this in for you (0 V → current setpoint in 5 s). The sequence runs on the backend, so it keeps going if you close the page; the step list itself is remembered in your browser.
 
 ## The device
 
@@ -135,7 +161,7 @@ python3 -m venv .venv
 - It can be overridden with environment variables if needed: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (see `backend/config.py`).
 - If the USB gets disconnected, the interface's **USB · SCPI** indicator turns red (the backend detects the failure when reading/writing over the serial port and notifies it via WebSocket). The backend retries reopening `/dev/mp711135` on every polling cycle; when the cable is reconnected, it recovers on its own without restarting anything.
 - `--host 0.0.0.0` is necessary so other machines on the LAN can reach the API; with `127.0.0.1` (uvicorn's default) it would only be accessible from the host itself.
-- If it starts without errors, it's already talking to the real device (it opens the output in remote mode). You can verify with `curl http://localhost:8000/idn`.
+- If the MP711135 is connected it switches it to remote mode on startup; you can verify with `curl http://localhost:8000/idn`. If it isn't connected (or is powered off) the backend still starts, shows **USB · SCPI** as disconnected, and keeps retrying until it appears.
 
 #### 3. Frontend
 
@@ -148,9 +174,42 @@ python3 -m http.server 8080 --bind 0.0.0.0
 
 And from the browser (on the Pi itself or another machine on the LAN): `http://<Pi-IP>:8080/MP711135.dc.html`.
 
-The component has a `backendUrl` prop (by default pointing to the Pi's fixed IP on the home network, `http://192.168.1.42:8000`) which is the API URL the frontend uses — change it in the `data-props` of the `<script data-dc-script>` in `MP711135.dc.html` if the backend runs on a different IP or port.
+The component has a `backendUrl` prop which is the API URL the frontend uses. By default it is empty, which means "the same host that served the page, port 8000" — so if the backend and frontend run on the same Pi, it just works whatever its IP is. Set it in the `data-props` of the `<script data-dc-script>` in `MP711135.dc.html` only if the backend runs on a different host or port.
 
-> **Important:** both that default URL and the one you use to access from the browser (`http://<Pi-IP>:8080/...`) assume the Pi always has the same IP. Since the Pi gets its IP via DHCP, it must be reserved in the router (fixed assignment by MAC) so it doesn't change; otherwise, sooner or later the router might assign it a different one and both the link saved in the browser and the default `backendUrl` would stop pointing to the right place.
+React, Babel and the IBM Plex fonts are vendored in `frontend/vendor/`, so the interface loads on a LAN without internet access.
+
+> **Tip:** the link you use from the browser (`http://<Pi-IP>:8080/...`) still depends on the Pi's IP. Since the Pi gets its IP via DHCP, reserve it in the router (fixed assignment by MAC) so a saved bookmark keeps working.
+
+### REST API
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/idn` | Device identification |
+| GET | `/state` | Output, setpoints, limits and a measurement |
+| GET | `/measurements` | Voltage, current, power, faults, mode |
+| PUT | `/output` `/voltage` `/current` `/voltage-limit` `/current-limit` | Set a value (`{"on": true}` / `{"value": 12.5}`) |
+| POST | `/faults/reset` | Clear a latched OVP/OCP (turns the output off) |
+| GET / POST / DELETE | `/sequence` | Status / start (`{"steps": [...], "repeat": 1}`) / stop a sequence |
+| WS | `/ws/measurements` | Measurements at `MP711135_POLL_HZ`, plus setpoints about once a second and sequence status |
+
+Interactive docs are at `http://<Pi-IP>:8000/docs`.
+
+## Development and tests
+
+`tests/fake_device.py` simulates the MP711135 on a pseudo-terminal (with a 10 Ω load, so CV/CC and OVP/OCP behave realistically). It lets you run the whole app without hardware:
+
+```bash
+.venv/bin/python -m tests.fake_device /tmp/mp711135 &
+MP711135_PORT=/tmp/mp711135 .venv/bin/uvicorn backend.main:app --port 8000
+```
+
+Tests (also run by GitHub Actions on every push and PR):
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+node tests/check_frontend.js   # syntax check of the UI's component script
+```
 
 ## Current status
 
@@ -158,6 +217,7 @@ The component has a `backendUrl` prop (by default pointing to the Pi's fixed IP 
 - Backend (pyserial + FastAPI): implemented. Modules `device.py` (SCPI communication), `main.py` (REST endpoints + WebSocket) and `models.py` (Pydantic validation). Includes open CORS (`allow_origins=["*"]`) so the frontend, served from a different origin/port, can call the API.
 - Real connection to the device over USB: **verified** against real hardware (`multicomp pro,MP711135,25281600,FV:V2.0.0` via `/dev/ttyUSB0`, CH340 adapter). Tested: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (5Hz stream) and range validation (422 for out-of-range values).
 - Frontend integration with the real backend: **done and tested** on the LAN (backend on the Raspberry Pi, browser on another machine).
+- Typed values, presets, front-panel sync, data logger, sequences/ramps, phone layout, offline assets and USB-reconnect handling: tested against the simulated device (`tests/fake_device.py`, pytest + GitHub Actions); **pending confirmation on the real hardware**.
 
 ## Stack
 

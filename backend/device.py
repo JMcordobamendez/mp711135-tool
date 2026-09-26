@@ -78,9 +78,18 @@ class MP711135:
         time.sleep(_WRITE_SETTLE_SECONDS)
 
     def _query(self, cmd: str) -> str:
-        self._write(cmd)
         if self._serial is None:
             raise DeviceError("device not open")
+        # Drop anything left over from an earlier query (e.g. a reply that
+        # arrived after its readline() timed out); otherwise every later query
+        # would read the previous command's answer.
+        # On POSIX a vanished port makes tcflush raise termios.error, which is
+        # neither a SerialException nor an OSError, so catch broadly here.
+        try:
+            self._serial.reset_input_buffer()
+        except Exception as exc:
+            raise DeviceError(f"failed to flush input for {cmd!r}: {exc}") from exc
+        self._write(cmd)
         try:
             raw = self._serial.readline()
         except serial.SerialException as exc:
