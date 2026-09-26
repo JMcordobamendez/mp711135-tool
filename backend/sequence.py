@@ -1,6 +1,8 @@
 """Runs voltage ramps / step sequences on the device from the backend, so a
 sequence keeps going even if the browser tab that started it is closed."""
 
+from __future__ import annotations
+
 import asyncio
 
 from .device import DeviceError, MP711135

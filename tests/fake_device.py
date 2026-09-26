@@ -8,6 +8,8 @@ It answers the SCPI subset the backend uses and models a resistive load
 (`load_ohms`), so CV/CC mode and OVP/OCP trips behave like the real thing.
 """
 
+from __future__ import annotations
+
 import os
 import pty
 import sys
