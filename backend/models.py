@@ -1,3 +1,7 @@
+# Optional[...] rather than `X | None`: pydantic evaluates these at runtime and
+# the Pi may run Python 3.9 (Raspberry Pi OS Bullseye).
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -79,8 +83,8 @@ class SetpointsResponse(BaseModel):
 class SequenceStep(BaseModel):
     voltage: float = Field(ge=0, le=60)
     # None leaves the current limit / output state as they are.
-    current: float | None = Field(default=None, ge=0, le=10)
-    output: bool | None = None
+    current: Optional[float] = Field(default=None, ge=0, le=10)
+    output: Optional[bool] = None
     # Seconds to ramp linearly from the previous voltage to `voltage`.
     ramp_s: float = Field(default=0, ge=0, le=3600)
     # Seconds to stay at `voltage` once reached.
@@ -88,14 +92,14 @@ class SequenceStep(BaseModel):
 
 
 class SequenceRequest(BaseModel):
-    steps: list[SequenceStep] = Field(min_length=1, max_length=100)
+    steps: List[SequenceStep] = Field(min_length=1, max_length=100)
     repeat: int = Field(default=1, ge=1, le=10000)
 
 
 class SequenceStatus(BaseModel):
     running: bool = False
-    step: int | None = None  # 0-based index of the step being executed
-    cycle: int | None = None  # 0-based repetition
+    step: Optional[int] = None  # 0-based index of the step being executed
+    cycle: Optional[int] = None  # 0-based repetition
     total_steps: int = 0
     repeat: int = 0
-    error: str | None = None
+    error: Optional[str] = None
