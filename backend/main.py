@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from . import config as cfg
 from .device import DeviceError, MP711135, Measurement
+from .sequence import SequenceRunner
 from .models import (
     CurrentLimitResponse,
     CurrentLimitSetRequest,
@@ -18,6 +19,9 @@ from .models import (
     MeasurementResponse,
     OutputResponse,
     OutputSetRequest,
+    SequenceRequest,
+    SequenceStatus,
+    SetpointsResponse,
     StateResponse,
     VoltageLimitResponse,
     VoltageLimitSetRequest,
@@ -26,6 +30,10 @@ from .models import (
 )
 
 logger = logging.getLogger("uvicorn.error")
+
+# Setpoints aren't part of MEASure:ALL:INFO?, so they're re-read at this rate
+# to pick up changes made on the supply's own front panel.
+SETPOINT_SYNC_S = 1.0
 
 
 async def call(app: FastAPI, fn, *args, **kwargs):
@@ -43,6 +51,23 @@ def _measurement_response(m: Measurement) -> MeasurementResponse:
         otp_fault=m.otp_fault,
         mode=m.mode.value,
     )
+
+
+def _read_setpoints(device: MP711135) -> SetpointsResponse:
+    return SetpointsResponse(
+        output=device.get_output(),
+        voltage_setpoint=device.get_voltage(),
+        current_setpoint=device.get_current(),
+        voltage_limit=device.get_voltage_limit(),
+        current_limit=device.get_current_limit(),
+    )
+
+
+def _active_fault(app: FastAPI) -> str | None:
+    m = app.state.last_measurement
+    if m is None:
+        return None
+    return "OVP" if m.ovp_fault else "OCP" if m.ocp_fault else "OTP" if m.otp_fault else None
 
 
 async def _broadcast(app: FastAPI, payload: dict) -> None:
@@ -70,21 +95,34 @@ async def _reconnect_device(app: FastAPI) -> bool:
 
 async def poll_loop(app: FastAPI) -> None:
     interval = 1 / cfg.POLL_HZ
+    loop = asyncio.get_running_loop()
+    next_setpoint_sync = 0.0
     while True:
         await asyncio.sleep(interval)
+        sequence = app.state.sequence.status.model_dump()
         if not app.state.device_connected:
             if not await _reconnect_device(app):
-                await _broadcast(app, {"device_connected": False})
+                await _broadcast(app, {"device_connected": False, "sequence": sequence})
                 continue
             app.state.device_connected = True
+            next_setpoint_sync = 0.0
         try:
             measurement = await call(app, app.state.device.measure_all_info)
+            setpoints = None
+            if loop.time() >= next_setpoint_sync:
+                setpoints = await call(app, _read_setpoints, app.state.device)
+                next_setpoint_sync = loop.time() + SETPOINT_SYNC_S
         except DeviceError:
             app.state.device_connected = False
-            await _broadcast(app, {"device_connected": False})
+            app.state.last_measurement = None
+            await _broadcast(app, {"device_connected": False, "sequence": sequence})
             continue
+        app.state.last_measurement = measurement
         payload = _measurement_response(measurement).model_dump()
         payload["device_connected"] = True
+        payload["sequence"] = sequence
+        if setpoints is not None:
+            payload["setpoints"] = setpoints.model_dump()
         await _broadcast(app, payload)
 
 
@@ -104,9 +142,14 @@ async def lifespan(app: FastAPI):
     app.state.device = device
     app.state.device_lock = asyncio.Lock()
     app.state.device_connected = connected
+    app.state.last_measurement = None
     app.state.ws_clients = set()
+    app.state.sequence = SequenceRunner(
+        lambda fn, *a: call(app, fn, *a), device, lambda: _active_fault(app)
+    )
     poll_task = asyncio.create_task(poll_loop(app))
     yield
+    await app.state.sequence.stop()
     poll_task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await poll_task
@@ -150,18 +193,10 @@ async def get_measurements():
 async def get_state():
     device = app.state.device
     async with app.state.device_lock:
-        output = await asyncio.to_thread(device.get_output)
-        voltage_setpoint = await asyncio.to_thread(device.get_voltage)
-        current_setpoint = await asyncio.to_thread(device.get_current)
-        voltage_limit = await asyncio.to_thread(device.get_voltage_limit)
-        current_limit = await asyncio.to_thread(device.get_current_limit)
+        setpoints = await asyncio.to_thread(_read_setpoints, device)
         measurement = await asyncio.to_thread(device.measure_all_info)
     return StateResponse(
-        output=output,
-        voltage_setpoint=voltage_setpoint,
-        current_setpoint=current_setpoint,
-        voltage_limit=voltage_limit,
-        current_limit=current_limit,
+        **setpoints.model_dump(),
         measurement=_measurement_response(measurement),
     )
 
@@ -224,3 +259,24 @@ async def ws_measurements(websocket: WebSocket):
         pass
     finally:
         app.state.ws_clients.discard(websocket)
+
+
+@app.get("/sequence", response_model=SequenceStatus)
+async def get_sequence():
+    return app.state.sequence.status
+
+
+@app.post("/sequence", response_model=SequenceStatus)
+async def start_sequence(body: SequenceRequest):
+    """Start a sequence of steps (replacing any running one). Each step may
+    switch the output and set the current limit, then ramps (or jumps) to its
+    voltage and holds it. Aborts if a protection trips or the device fails."""
+    if not app.state.device_connected:
+        raise DeviceError("device not connected")
+    return await app.state.sequence.start(body)
+
+
+@app.delete("/sequence", response_model=SequenceStatus)
+async def stop_sequence():
+    """Stop the running sequence, leaving the output as it is."""
+    return await app.state.sequence.stop()
