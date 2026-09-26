@@ -7,7 +7,12 @@ Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) D
 ## What the application does
 
 - **Real-time monitoring** of the output: measured voltage, current and power, with a graph of their evolution over time.
-- **Output control**: set voltage and current limit, and turn the output on/off.
+- **Output control**: set voltage and current limit (−/+ buttons, slider, or type the value and press Enter), and turn the output on/off.
+- **Presets**: one-click voltage/current combinations (3.3 V, 5 V, 12 V… or your own with **+ SAVE**), stored in the browser.
+- **Front-panel sync**: setpoints and limits changed with the supply's own knobs show up in the web UI within about a second.
+- **Data logger**: record V/I/P while the page is open, with energy (Wh) and charge (Ah) counters, and export it as CSV.
+- **Sequences and ramps**: a list of steps (voltage, optional current limit, output on/off, ramp time, hold time) with repeats, run by the backend so it keeps going if the browser is closed, and aborted if a protection trips. **SOFT START** fills in a 0 V → setpoint ramp.
+- **Works on a phone**: the layout stacks into one column on narrow screens.
 - **Protection configuration**: adjust OVP (overvoltage) and OCP (overcurrent) thresholds.
 - **Fault detection and warning**: overvoltage, overcurrent or overtemperature, with clear visual indication and a reset option.
 - **Regulation mode indication**: shows the active mode (CV - constant voltage / CC - constant current).
@@ -153,6 +158,37 @@ The component has a `backendUrl` prop which is the API URL the frontend uses. By
 React, Babel and the IBM Plex fonts are vendored in `frontend/vendor/`, so the interface loads on a LAN without internet access.
 
 > **Tip:** the link you use from the browser (`http://<Pi-IP>:8080/...`) still depends on the Pi's IP. Since the Pi gets its IP via DHCP, reserve it in the router (fixed assignment by MAC) so a saved bookmark keeps working.
+
+### REST API
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/idn` | Device identification |
+| GET | `/state` | Output, setpoints, limits and a measurement |
+| GET | `/measurements` | Voltage, current, power, faults, mode |
+| PUT | `/output` `/voltage` `/current` `/voltage-limit` `/current-limit` | Set a value (`{"on": true}` / `{"value": 12.5}`) |
+| POST | `/faults/reset` | Clear a latched OVP/OCP (turns the output off) |
+| GET / POST / DELETE | `/sequence` | Status / start (`{"steps": [...], "repeat": 1}`) / stop a sequence |
+| WS | `/ws/measurements` | Measurements at `MP711135_POLL_HZ`, plus setpoints about once a second and sequence status |
+
+Interactive docs are at `http://<Pi-IP>:8000/docs`.
+
+## Development and tests
+
+`tests/fake_device.py` simulates the MP711135 on a pseudo-terminal (with a 10 Ω load, so CV/CC and OVP/OCP behave realistically). It lets you run the whole app without hardware:
+
+```bash
+.venv/bin/python -m tests.fake_device /tmp/mp711135 &
+MP711135_PORT=/tmp/mp711135 .venv/bin/uvicorn backend.main:app --port 8000
+```
+
+Tests (also run by GitHub Actions on every push and PR):
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+node tests/check_frontend.js   # syntax check of the UI's component script
+```
 
 ## Current status
 

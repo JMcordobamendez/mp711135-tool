@@ -23,12 +23,30 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#e6ebf2;border:3px solid #0d131b;box-shadow:0 0 0 1px #2a3a34;cursor:pointer;}
   input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#e6ebf2;border:3px solid #0d131b;cursor:pointer;}
   ::selection{background:#2ee6a6;color:#05221a;}
+  /* Phone / narrow-window layout. The markup uses inline styles, so these
+     overrides need !important. */
+  @media (max-width: 900px){
+    .mp-main{grid-template-columns:minmax(0,1fr) !important;}
+    .mp-controls{order:-1;}  /* controls first when stacked */
+  }
+  @media (max-width: 640px){
+    .mp-page{padding:10px !important;}
+    .mp-header{flex-wrap:wrap;padding:12px 14px !important;}
+    .mp-header-right{gap:12px !important;}
+    .mp-vi{grid-template-columns:minmax(0,1fr) !important;}
+    .mp-card{padding:16px 18px !important;}
+    .mp-big{font-size:46px !important;}
+    .mp-stat{padding:12px 12px !important;}
+    .mp-stat-v{font-size:18px !important;}
+    .mp-log-stats{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+    .mp-hide-narrow{display:none !important;}
+  }
 </style>
 </helmet>
-<div style="min-height:100vh;padding:22px;display:flex;justify-content:center;">
+<div class="mp-page" style="min-height:100vh;padding:22px;display:flex;justify-content:center;">
  <div style="width:100%;max-width:1360px;display:flex;flex-direction:column;gap:16px;">
 
-  <header style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:#0c1118;border:1px solid #1b2430;border-radius:14px;">
+  <header class="mp-header" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:#0c1118;border:1px solid #1b2430;border-radius:14px;">
    <div style="display:flex;align-items:center;gap:14px;">
     <div style="width:40px;height:40px;border-radius:10px;background:#0d131b;border:1px solid #24303c;display:flex;align-items:center;justify-content:center;">
      <div style="width:15px;height:15px;border-radius:4px;background:#2ee6a6;box-shadow:0 0 14px #2ee6a6;"></div>
@@ -38,7 +56,7 @@
      <div style="font:500 11px/1.4 'IBM Plex Mono';color:#6f7b8a;letter-spacing:.07em;margin-top:5px;">60&nbsp;V · 10&nbsp;A · 300&nbsp;W — PROGRAMMABLE DC POWER SUPPLY</div>
     </div>
    </div>
-   <div style="display:flex;align-items:center;gap:22px;">
+   <div class="mp-header-right" style="display:flex;align-items:center;gap:22px;">
     <div style="display:flex;align-items:center;gap:9px;">
      <div style="{{ connDotStyle }}"></div>
      <div>
@@ -50,7 +68,7 @@
    </div>
   </header>
 
-  <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px;">
+  <div class="mp-hide-narrow" style="display:flex;align-items:center;justify-content:flex-end;gap:16px;">
    <span style="font:500 11px 'IBM Plex Mono';color:#556270;letter-spacing:.1em;">RES. 10&nbsp;mV / 1&nbsp;mA · 4½-DIGIT READBACK</span>
   </div>
 
@@ -64,21 +82,21 @@
    </div>
   </sc-if>
 
-  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start;">
+  <div class="mp-main" style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start;">
 
    <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
 
     <div style="display:flex;flex-direction:column;gap:16px;">
-     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+     <div class="mp-vi" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 
-      <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
+      <div class="mp-card" style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#2ee6a6;opacity:.55;"></div>
        <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font:600 11px/1 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">OUTPUT VOLTAGE</span>
         <span style="{{ vBadgeStyle }}">{{ vBadgeText }}</span>
        </div>
        <div style="display:flex;align-items:baseline;gap:10px;margin-top:16px;">
-        <div style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
+        <div class="mp-big" style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
          <span style="color:rgba(46,230,166,.10);">{{ measVGhost }}</span>
          <span style="position:absolute;inset:0;color:#2ee6a6;text-shadow:0 0 26px rgba(46,230,166,.4);white-space:nowrap;">{{ measVStr }}</span>
         </div>
@@ -87,14 +105,14 @@
        <div style="margin-top:16px;font:500 12px 'IBM Plex Mono';color:#7a8694;letter-spacing:.03em;">SETPOINT&nbsp;&nbsp;<span style="color:#aeb8c4;">{{ setVStr }} V</span></div>
       </div>
 
-      <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
+      <div class="mp-card" style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;">
        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#ffb020;opacity:.55;"></div>
        <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font:600 11px/1 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">OUTPUT CURRENT</span>
         <span style="{{ iBadgeStyle }}">{{ iBadgeText }}</span>
        </div>
        <div style="display:flex;align-items:baseline;gap:10px;margin-top:16px;">
-        <div style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
+        <div class="mp-big" style="position:relative;font-family:'DSEG7 Classic','IBM Plex Mono',monospace;font-weight:700;font-size:64px;line-height:1;white-space:nowrap;">
          <span style="color:rgba(255,176,32,.10);">{{ measIGhost }}</span>
          <span style="position:absolute;inset:0;color:#ffb020;text-shadow:0 0 26px rgba(255,176,32,.38);">{{ measIStr }}</span>
         </div>
@@ -106,17 +124,17 @@
      </div>
 
      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#0d131b;border:1px solid #1b2430;border-radius:14px;overflow:hidden;">
-      <div style="padding:16px 22px;border-right:1px solid #1b2430;">
+      <div class="mp-stat" style="padding:16px 22px;border-right:1px solid #1b2430;">
        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">POWER</div>
-       <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ measWStr }}<span style="font-size:14px;color:#6f7b8a;"> W</span></div>
+       <div class="mp-stat-v" style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ measWStr }}<span style="font-size:14px;color:#6f7b8a;"> W</span></div>
       </div>
-      <div style="padding:16px 22px;border-right:1px solid #1b2430;">
+      <div class="mp-stat" style="padding:16px 22px;border-right:1px solid #1b2430;">
        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">REGULATION MODE</div>
-       <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:{{ regColor }};">{{ regText }}</div>
+       <div class="mp-stat-v" style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:{{ regColor }};">{{ regText }}</div>
       </div>
-      <div style="padding:16px 22px;">
+      <div class="mp-stat" style="padding:16px 22px;">
        <div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">UPTIME</div>
-       <div style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ elapsedStr }}</div>
+       <div class="mp-stat-v" style="margin-top:8px;font:700 26px 'IBM Plex Mono';color:#e6ebf2;">{{ elapsedStr }}</div>
       </div>
      </div>
     </div>
@@ -137,12 +155,81 @@
      </div>
     </div>
 
+    <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">DATA LOGGER</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+       <button onClick="{{ toggleRec }}" style="{{ recBtnStyle }}">{{ recBtnLabel }}</button>
+       <button onClick="{{ exportCsv }}" title="Download the recorded samples as CSV" style="padding:7px 12px;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#aeb8c4;font:600 11px 'IBM Plex Mono';letter-spacing:.06em;cursor:pointer;">EXPORT CSV</button>
+       <button onClick="{{ clearLog }}" title="Discard the recorded samples and reset the counters" style="padding:7px 12px;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#aeb8c4;font:600 11px 'IBM Plex Mono';letter-spacing:.06em;cursor:pointer;">CLEAR</button>
+      </div>
+     </div>
+     <div class="mp-log-stats" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+      <div><div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">DURATION</div><div style="margin-top:6px;font:700 20px 'IBM Plex Mono';color:#e6ebf2;">{{ logDuration }}</div></div>
+      <div><div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">SAMPLES</div><div style="margin-top:6px;font:700 20px 'IBM Plex Mono';color:#e6ebf2;">{{ logSamples }}</div></div>
+      <div><div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">ENERGY</div><div style="margin-top:6px;font:700 20px 'IBM Plex Mono';color:#e6ebf2;">{{ logWh }}<span style="font-size:12px;color:#6f7b8a;"> Wh</span></div></div>
+      <div><div style="font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">CHARGE</div><div style="margin-top:6px;font:700 20px 'IBM Plex Mono';color:#e6ebf2;">{{ logAh }}<span style="font-size:12px;color:#6f7b8a;"> Ah</span></div></div>
+     </div>
+    </div>
+
+    <div style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+       <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.14em;color:#6f7b8a;">SEQUENCE · RAMPS</span>
+       <span style="{{ seqStatusStyle }}">{{ seqStatusText }}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+       <button onClick="{{ seqSoftStart }}" title="Fill in a soft start: output on at 0 V, then ramp to the current setpoint in 5 s" style="padding:7px 12px;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#aeb8c4;font:600 11px 'IBM Plex Mono';letter-spacing:.06em;cursor:pointer;">SOFT START</button>
+       <button onClick="{{ seqAddStep }}" style="padding:7px 12px;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#aeb8c4;font:600 11px 'IBM Plex Mono';letter-spacing:.06em;cursor:pointer;">+ STEP</button>
+       <button onClick="{{ seqToggle }}" style="{{ seqBtnStyle }}">{{ seqBtnLabel }}</button>
+      </div>
+     </div>
+     <div style="overflow-x:auto;">
+      <div style="min-width:470px;display:flex;flex-direction:column;gap:6px;">
+       <div style="display:grid;grid-template-columns:28px minmax(70px,1fr) minmax(70px,1fr) 64px minmax(60px,1fr) minmax(60px,1fr) 30px;gap:8px;align-items:center;">
+        <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;">#</span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;text-align:right;">VOLT V</span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;text-align:right;">CURR A</span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;text-align:center;">OUTPUT</span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;text-align:right;">RAMP s</span><span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;text-align:right;">HOLD s</span><span></span>
+       </div>
+       <sc-for list="{{ seqRows }}" as="r">
+        <div style="{{ r.rowStyle }}">
+         <span style="font:600 12px 'IBM Plex Mono';color:#6f7b8a;">{{ r.num }}</span>
+         <input type="text" inputMode="decimal" value="{{ r.voltage }}" onChange="{{ r.onVoltage }}" placeholder="0" style="width:100%;min-width:0;box-sizing:border-box;padding:7px 8px;border-radius:7px;border:1px solid #1b2430;background:#080c12;color:#e6ebf2;font:500 13px 'IBM Plex Mono';text-align:right;outline:none;">
+         <input type="text" inputMode="decimal" value="{{ r.current }}" onChange="{{ r.onCurrent }}" placeholder="keep" title="Leave empty to keep the current limit as it is" style="width:100%;min-width:0;box-sizing:border-box;padding:7px 8px;border-radius:7px;border:1px solid #1b2430;background:#080c12;color:#e6ebf2;font:500 13px 'IBM Plex Mono';text-align:right;outline:none;">
+         <button onClick="{{ r.cycleOutput }}" title="Switch the output at the start of this step (— leaves it as it is)" style="{{ r.outStyle }}">{{ r.outLabel }}</button>
+         <input type="text" inputMode="decimal" value="{{ r.ramp }}" onChange="{{ r.onRamp }}" placeholder="0" title="Seconds to ramp from the previous voltage (0 = jump)" style="width:100%;min-width:0;box-sizing:border-box;padding:7px 8px;border-radius:7px;border:1px solid #1b2430;background:#080c12;color:#e6ebf2;font:500 13px 'IBM Plex Mono';text-align:right;outline:none;">
+         <input type="text" inputMode="decimal" value="{{ r.hold }}" onChange="{{ r.onHold }}" placeholder="0" title="Seconds to stay at this voltage" style="width:100%;min-width:0;box-sizing:border-box;padding:7px 8px;border-radius:7px;border:1px solid #1b2430;background:#080c12;color:#e6ebf2;font:500 13px 'IBM Plex Mono';text-align:right;outline:none;">
+         <button onClick="{{ r.remove }}" title="Delete this step" style="height:30px;border-radius:7px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 13px 'IBM Plex Mono';cursor:pointer;">×</button>
+        </div>
+       </sc-for>
+      </div>
+     </div>
+     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.1em;color:#556270;">REPEAT</span>
+      <input type="text" inputMode="numeric" value="{{ seqRepeat }}" onChange="{{ seqOnRepeat }}" style="width:100%;min-width:0;box-sizing:border-box;padding:7px 8px;border-radius:7px;border:1px solid #1b2430;background:#080c12;color:#e6ebf2;font:500 13px 'IBM Plex Mono';text-align:right;outline:none;width:70px;">
+      <span style="font:500 11px 'IBM Plex Mono';color:#556270;">Runs on the backend: it keeps going if you close this page. Stops on OVP/OCP/OTP.</span>
+     </div>
+    </div>
+
    </div>
 
-   <aside style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:20px;">
+   <aside class="mp-controls" style="background:#0d131b;border:1px solid #1b2430;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:20px;">
     <span style="font:600 12px 'IBM Plex Sans';letter-spacing:.12em;color:#8a95a4;">PARAMETERS</span>
 
     <button onClick="{{ toggleOutput }}" style="{{ outBtnStyle }}">{{ outBtnLabel }}</button>
+
+    <div style="display:flex;flex-direction:column;gap:9px;">
+     <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font:600 11px 'IBM Plex Mono';letter-spacing:.1em;color:#7a8694;">PRESETS</span>
+      <button onClick="{{ savePreset }}" title="Save the current voltage and current as a preset" style="padding:4px 9px;border-radius:7px;border:1px solid #24303c;background:#0c1118;color:#2ee6a6;font:600 10px 'IBM Plex Mono';letter-spacing:.06em;cursor:pointer;">+ SAVE</button>
+     </div>
+     <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <sc-for list="{{ presets }}" as="p">
+       <div style="display:flex;border:1px solid #24303c;border-radius:8px;overflow:hidden;background:#0c1118;">
+        <button onClick="{{ p.apply }}" title="Apply this preset" style="padding:7px 9px;border:none;background:transparent;color:#dbe2ea;font:600 11px 'IBM Plex Mono';cursor:pointer;">{{ p.label }}</button>
+        <button onClick="{{ p.remove }}" title="Delete this preset" style="padding:7px 8px;border:none;border-left:1px solid #1b2430;background:transparent;color:#556270;font:600 12px 'IBM Plex Mono';cursor:pointer;">×</button>
+       </div>
+      </sc-for>
+     </div>
+    </div>
 
     <div style="display:flex;flex-direction:column;gap:11px;">
      <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -226,6 +313,8 @@ class Component extends DCLogic {
     this.reconnectTimer = null;
     this.debounceTimers = {};
     this.errorTimer = null;
+    this.localChange = {};   // key -> ms timestamp of the last change made from this page
+    this.logRows = [];       // recorded samples, see logSample()
     this.state = {
       connected:false,
       deviceConnected:true,
@@ -240,8 +329,21 @@ class Component extends DCLogic {
       elapsed:0,
       error:null,
       drafts:{},
+      presets: this.loadLS('mp711135.presets', [{v:3.3,i:0.5},{v:5,i:1},{v:12,i:1}]),
+      recording:false, logCount:0, logWh:0, logAh:0, logStart:0, logEnd:0,
+      seqRows: this.loadLS('mp711135.sequence', [{voltage:'0',current:'',output:true,ramp:'0',hold:'0'},{voltage:'5',current:'',output:null,ramp:'5',hold:'0'}]),
+      seqRepeat: String(this.loadLS('mp711135.sequenceRepeat', 1)),
+      seqStatus: { running:false, step:null, cycle:null, total_steps:0, repeat:0, error:null },
     };
   }
+
+  // localStorage is a per-browser convenience; it can be missing or throw
+  // (private windows, blocked storage), in which case defaults are used.
+  loadLS(key, fallback){
+    try{ const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+    catch(e){ return fallback; }
+  }
+  saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
 
   get winSec(){ const w=Number(this.props.graphWindowSec); return (w>=10&&w<=90)?w:30; }
   get showGrid(){ return this.props.showGrid !== false; }
@@ -309,11 +411,14 @@ class Component extends DCLogic {
     ws.onmessage = (ev) => {
       try{
         const m = JSON.parse(ev.data);
+        if(m.sequence) this.setState({ seqStatus: m.sequence });
         if(m.device_connected === false){ this.setState({ deviceConnected:false }); return; }
         // Device just came back (or was absent when the page loaded):
-        // re-read setpoints/limits, which the WebSocket doesn't carry.
+        // re-read everything at once rather than waiting for the next sync.
         if(!this.state.deviceConnected) this.loadState();
         this.applyMeasurement(m);
+        if(m.setpoints) this.applySetpoints(m.setpoints);
+        this.logSample(m);
       }catch(e){}
     };
     ws.onclose = () => { this.setState({ connected:false }); this.scheduleReconnect(); };
@@ -382,15 +487,32 @@ class Component extends DCLogic {
     this.setState({ error:msg });
     this.errorTimer = setTimeout(()=> this.setState({ error:null }), 6000);
   }
+  // Setpoints re-read by the backend about once a second, so changes made on
+  // the supply's front panel show up here. A value the user is editing, or
+  // changed from this page in the last couple of seconds, is left alone so
+  // an in-flight change doesn't bounce back.
+  applySetpoints(sp){
+    const map = { setV:sp.voltage_setpoint, setI:sp.current_setpoint, ovp:sp.voltage_limit, ocp:sp.current_limit };
+    const now = Date.now(), upd = {};
+    for(const k in map){
+      if(this.state.drafts[k] !== undefined) continue;
+      if(now - (this.localChange[k] || 0) < 2000) continue;
+      if(typeof map[k] === 'number' && map[k] !== this.state[k]) upd[k] = map[k];
+    }
+    if(Object.keys(upd).length) this.setState(upd);
+  }
+  markLocal(key){ this.localChange[key] = Date.now(); }
+
   debounced(key, fn, ms=180){
+    this.markLocal(key);
     clearTimeout(this.debounceTimers[key]);
     this.debounceTimers[key] = setTimeout(fn, ms);
   }
 
-  setVoltage(v){ this.putValue('/voltage', {value:v}, (d)=> this.setState({ setV:d.voltage_setpoint })); }
-  setCurrent(v){ this.putValue('/current', {value:v}, (d)=> this.setState({ setI:d.current_setpoint })); }
-  setVoltageLimit(v){ this.putValue('/voltage-limit', {value:v}, (d)=> this.setState({ ovp:d.voltage_limit })); }
-  setCurrentLimit(v){ this.putValue('/current-limit', {value:v}, (d)=> this.setState({ ocp:d.current_limit })); }
+  setVoltage(v){ this.markLocal('setV'); this.putValue('/voltage', {value:v}, (d)=> this.setState({ setV:d.voltage_setpoint })); }
+  setCurrent(v){ this.markLocal('setI'); this.putValue('/current', {value:v}, (d)=> this.setState({ setI:d.current_setpoint })); }
+  setVoltageLimit(v){ this.markLocal('ovp'); this.putValue('/voltage-limit', {value:v}, (d)=> this.setState({ ovp:d.voltage_limit })); }
+  setCurrentLimit(v){ this.markLocal('ocp'); this.putValue('/current-limit', {value:v}, (d)=> this.setState({ ocp:d.current_limit })); }
 
   initCanvas(){
     const c = this.canvasRef.current; if(!c) return;
@@ -533,6 +655,125 @@ class Component extends DCLogic {
     else if(e.key === 'Escape'){ e.target.blur(); }
   }
 
+  // ---- presets ----
+  applyPreset(p){
+    this.setState({ setV:p.v, setI:p.i });
+    this.setVoltage(p.v);
+    this.setCurrent(p.i);
+  }
+  savePreset(){
+    const p = { v:this.round(this.state.setV,0.01), i:this.round(this.state.setI,0.001) };
+    const list = this.state.presets.filter(q => !(q.v===p.v && q.i===p.i)).concat([p]).slice(-12);
+    this.setState({ presets:list }); this.saveLS('mp711135.presets', list);
+  }
+  removePreset(idx){
+    const list = this.state.presets.filter((_, j) => j !== idx);
+    this.setState({ presets:list }); this.saveLS('mp711135.presets', list);
+  }
+
+  // ---- data logger (in this browser, while the page is open) ----
+  logSample(m){
+    if(!this.state.recording) return;
+    const t = Date.now();
+    const prev = this.logRows[this.logRows.length-1];
+    // Integrate with the time since the previous sample, capped so a gap
+    // (e.g. USB unplugged) doesn't count as energy delivered.
+    const dt = prev ? Math.min((t - prev.t)/1000, 1) : 0;
+    this.logRows.push({ t, v:m.voltage, i:m.current, p:m.power, mode:m.mode });
+    this.setState(st => ({
+      logCount: this.logRows.length,
+      logWh: st.logWh + m.power*dt/3600,
+      logAh: st.logAh + m.current*dt/3600,
+      logEnd: t,
+    }));
+  }
+  toggleRec(){
+    if(this.state.recording){ this.setState({ recording:false, logEnd:Date.now() }); return; }
+    const now = Date.now();
+    // Resuming keeps the existing samples and counters; CLEAR starts over.
+    this.setState(st => ({ recording:true, logStart: st.logCount ? st.logStart : now, logEnd: now }));
+  }
+  clearLog(){
+    this.logRows = [];
+    const now = Date.now();
+    this.setState({ logCount:0, logWh:0, logAh:0, logStart:now, logEnd:now });
+  }
+  exportCsv(){
+    if(!this.logRows.length){ this.flashError('NOTHING RECORDED YET — PRESS REC'); return; }
+    const t0 = this.logRows[0].t;
+    const lines = ['timestamp,elapsed_s,voltage_V,current_A,power_W,mode'];
+    for(const r of this.logRows){
+      lines.push([new Date(r.t).toISOString(), ((r.t-t0)/1000).toFixed(3), r.v, r.i, r.p, r.mode].join(','));
+    }
+    const blob = new Blob([lines.join('\n')+'\n'], { type:'text/csv' });
+    const d = new Date(t0), pad = n => String(n).padStart(2,'0');
+    const name = 'mp711135-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ---- sequences (run by the backend) ----
+  setSeqRows(rows){ this.setState({ seqRows:rows }); this.saveLS('mp711135.sequence', rows); }
+  editSeqRow(idx, field, val){
+    this.setSeqRows(this.state.seqRows.map((r, j) => j === idx ? Object.assign({}, r, { [field]:val }) : r));
+  }
+  seqAddStep(){
+    this.setSeqRows(this.state.seqRows.concat([{ voltage:this.fmt(this.state.setV,2), current:'', output:null, ramp:'0', hold:'1' }]));
+  }
+  seqSoftStart(){
+    this.setSeqRows([
+      { voltage:'0', current:'', output:true, ramp:'0', hold:'0' },
+      { voltage:this.fmt(this.state.setV,2), current:'', output:null, ramp:'5', hold:'0' },
+    ]);
+    this.setState({ seqRepeat:'1' }); this.saveLS('mp711135.sequenceRepeat', 1);
+  }
+  seqOnRepeat(e){
+    this.setState({ seqRepeat:e.target.value });
+    const n = parseInt(e.target.value, 10);
+    if(n >= 1) this.saveLS('mp711135.sequenceRepeat', n);
+  }
+  buildSequence(){
+    const num = (s) => { s = String(s).trim().replace(',', '.'); return s === '' ? null : Number(s); };
+    const steps = [];
+    if(!this.state.seqRows.length) throw new Error('ADD AT LEAST ONE STEP');
+    this.state.seqRows.forEach((r, j) => {
+      const n = 'STEP '+(j+1)+': ';
+      const v = num(r.voltage), c = num(r.current), ramp = num(r.ramp) ?? 0, hold = num(r.hold) ?? 0;
+      if(v === null || !(v >= 0 && v <= 60)) throw new Error(n+'VOLTAGE MUST BE 0–60');
+      if(c !== null && !(c >= 0 && c <= 10)) throw new Error(n+'CURRENT MUST BE 0–10 OR EMPTY');
+      if(!(ramp >= 0 && ramp <= 3600)) throw new Error(n+'RAMP MUST BE 0–3600 s');
+      if(!(hold >= 0 && hold <= 86400)) throw new Error(n+'HOLD MUST BE 0–86400 s');
+      const step = { voltage:v, ramp_s:ramp, hold_s:hold };
+      if(c !== null) step.current = c;
+      if(r.output !== null && r.output !== undefined) step.output = r.output;
+      steps.push(step);
+    });
+    const repeat = parseInt(this.state.seqRepeat, 10);
+    if(!(repeat >= 1 && repeat <= 10000)) throw new Error('REPEAT MUST BE 1–10000');
+    return { steps, repeat };
+  }
+  async seqToggle(){
+    if(this.state.seqStatus.running){
+      try{
+        const res = await fetch(this.baseUrl+'/sequence', { method:'DELETE' });
+        if(!res.ok) throw new Error(await this.errorDetail(res));
+        this.setState({ seqStatus: await res.json() });
+      }catch(e){ this.commandFailed('STOP SEQUENCE', e); }
+      return;
+    }
+    let body;
+    try{ body = this.buildSequence(); }catch(e){ this.flashError(e.message); return; }
+    try{
+      const res = await fetch(this.baseUrl+'/sequence', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body),
+      });
+      if(!res.ok) throw new Error(await this.errorDetail(res));
+      this.setState({ seqStatus: await res.json() });
+    }catch(e){ this.commandFailed('START SEQUENCE', e); }
+  }
+
   fmt(n,d){ return Number(n).toFixed(d); }
   ghost(s){ return s.replace(/[0-9]/g,'8'); }
   timeStr(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
@@ -552,6 +793,54 @@ class Component extends DCLogic {
 
   renderVals(){
     const st = this.state;
+
+    const presets = st.presets.map((p, j) => ({
+      label: this.fmt(p.v,2)+'V '+this.fmt(p.i,2)+'A',
+      apply: ()=> this.applyPreset(p),
+      remove: ()=> this.removePreset(j),
+    }));
+
+    const smallBtn = 'padding:7px 12px;border-radius:8px;font:600 11px \'IBM Plex Mono\';letter-spacing:.06em;cursor:pointer;';
+    const recBtnStyle = st.recording
+      ? smallBtn+'border:1px solid #ff4d5e;background:#25090d;color:#ff8b96;'
+      : smallBtn+'border:1px solid #24303c;background:#0c1118;color:#ff8b96;';
+    const logSec = st.logCount || st.recording ? Math.max(0, Math.floor(((st.recording ? st.now : st.logEnd) - st.logStart)/1000)) : 0;
+    const hms = (sec) => { const h=Math.floor(sec/3600); return (h ? h+':' : '')+this.timeStr(sec%3600); };
+
+    const seq = st.seqStatus || {};
+    const rowBase = 'display:grid;grid-template-columns:28px minmax(70px,1fr) minmax(70px,1fr) 64px minmax(60px,1fr) minmax(60px,1fr) 30px;gap:8px;align-items:center;border-radius:8px;';
+    const outBase = 'height:30px;border-radius:7px;font:600 11px \'IBM Plex Mono\';cursor:pointer;';
+    const seqRows = st.seqRows.map((r, j) => ({
+      num: j+1,
+      voltage: r.voltage, current: r.current, ramp: r.ramp, hold: r.hold,
+      rowStyle: rowBase + (seq.running && seq.step === j ? 'background:#12211b;box-shadow:0 0 0 1px #2ee6a6;' : ''),
+      outLabel: r.output === true ? 'ON' : r.output === false ? 'OFF' : '—',
+      outStyle: outBase + (r.output === true ? 'border:1px solid #2ee6a6;background:#12211b;color:#2ee6a6;'
+                        : r.output === false ? 'border:1px solid #3a2c10;background:#0c1118;color:#ffb020;'
+                        : 'border:1px solid #24303c;background:#0c1118;color:#556270;'),
+      onVoltage: (e)=> this.editSeqRow(j, 'voltage', e.target.value),
+      onCurrent: (e)=> this.editSeqRow(j, 'current', e.target.value),
+      onRamp: (e)=> this.editSeqRow(j, 'ramp', e.target.value),
+      onHold: (e)=> this.editSeqRow(j, 'hold', e.target.value),
+      cycleOutput: ()=> this.editSeqRow(j, 'output', r.output === null || r.output === undefined ? true : r.output === true ? false : null),
+      remove: ()=> this.setSeqRows(st.seqRows.filter((_, k) => k !== j)),
+    }));
+    const seqStatusBase = 'font:600 11px \'IBM Plex Mono\';letter-spacing:.06em;';
+    let seqStatusText, seqStatusStyle;
+    if(seq.running){
+      seqStatusText = 'RUNNING · STEP '+((seq.step ?? 0)+1)+'/'+seq.total_steps+(seq.repeat > 1 ? ' · CYCLE '+((seq.cycle ?? 0)+1)+'/'+seq.repeat : '');
+      seqStatusStyle = seqStatusBase+'color:#2ee6a6;';
+    }else if(seq.error){
+      seqStatusText = 'ABORTED: '+String(seq.error).toUpperCase();
+      seqStatusStyle = seqStatusBase+'color:#ff8b96;';
+    }else{
+      seqStatusText = 'IDLE';
+      seqStatusStyle = seqStatusBase+'color:#556270;';
+    }
+    const seqBtnStyle = seq.running
+      ? smallBtn+'border:1px solid #ff4d5e;background:#25090d;color:#ff8b96;'
+      : smallBtn+'border:1px solid #2ee6a6;background:#12211b;color:#2ee6a6;';
+
     const measVStr = this.fmt(st.measV,2);
     const measIStr = this.fmt(st.measI,3);
     const measWStr = this.fmt(st.measW,2);
@@ -623,6 +912,15 @@ class Component extends DCLogic {
       vUp:()=>this.vUp(), vDown:()=>this.vDown(), iUp:()=>this.iUp(), iDown:()=>this.iDown(),
       ovpUp:()=>this.ovpUp(), ovpDown:()=>this.ovpDown(), ocpUp:()=>this.ocpUp(), ocpDown:()=>this.ocpDown(),
       ...this.fieldHandlers(),
+      presets, savePreset:()=>this.savePreset(),
+      recBtnStyle, recBtnLabel: st.recording ? '■ STOP' : '● REC',
+      toggleRec:()=>this.toggleRec(), exportCsv:()=>this.exportCsv(), clearLog:()=>this.clearLog(),
+      logDuration: hms(logSec), logSamples: st.logCount,
+      logWh: st.logWh < 10 ? st.logWh.toFixed(4) : st.logWh.toFixed(2),
+      logAh: st.logAh < 10 ? st.logAh.toFixed(4) : st.logAh.toFixed(2),
+      seqRows, seqRepeat: st.seqRepeat, seqOnRepeat:(e)=>this.seqOnRepeat(e),
+      seqStatusText, seqStatusStyle, seqBtnStyle, seqBtnLabel: seq.running ? '■ STOP' : '▶ START',
+      seqToggle:()=>this.seqToggle(), seqAddStep:()=>this.seqAddStep(), seqSoftStart:()=>this.seqSoftStart(),
     };
   }
 }
