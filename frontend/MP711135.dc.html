@@ -151,7 +151,9 @@
      </div>
      <div style="display:flex;align-items:center;gap:9px;">
       <button onClick="{{ vDown }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#2ee6a6;font:600 22px 'IBM Plex Mono';cursor:pointer;">−</button>
-      <div style="flex:1;text-align:center;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;">{{ setVStr }}<span style="font-size:14px;color:#6f7b8a;"> V</span></div>
+      <label style="flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:4px;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;cursor:text;">
+       <input type="text" inputMode="decimal" title="Type a value and press Enter" value="{{ setVField }}" onFocus="{{ focusSetV }}" onChange="{{ editSetV }}" onKeyDown="{{ keySetV }}" onBlur="{{ blurSetV }}" onMouseUp="{{ mouseUpSetV }}" style="width:5.5ch;text-align:right;font:inherit;color:inherit;border:none;outline:none;background:transparent;padding:0;margin:0;"><span style="font-size:14px;color:#6f7b8a;">V</span>
+      </label>
       <button onClick="{{ vUp }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#2ee6a6;font:600 22px 'IBM Plex Mono';cursor:pointer;">+</button>
      </div>
      <input type="range" min="0" max="60" step="0.01" value="{{ setV }}" onInput="{{ onSetV }}" style="width:100%;accent-color:#2ee6a6;">
@@ -164,7 +166,9 @@
      </div>
      <div style="display:flex;align-items:center;gap:9px;">
       <button onClick="{{ iDown }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#ffb020;font:600 22px 'IBM Plex Mono';cursor:pointer;">−</button>
-      <div style="flex:1;text-align:center;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;">{{ setIStr }}<span style="font-size:14px;color:#6f7b8a;"> A</span></div>
+      <label style="flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:4px;font:700 28px 'IBM Plex Mono';color:#e6ebf2;background:#080c12;border:1px solid #1b2430;border-radius:9px;padding:8px 0;cursor:text;">
+       <input type="text" inputMode="decimal" title="Type a value and press Enter" value="{{ setIField }}" onFocus="{{ focusSetI }}" onChange="{{ editSetI }}" onKeyDown="{{ keySetI }}" onBlur="{{ blurSetI }}" onMouseUp="{{ mouseUpSetI }}" style="width:5.5ch;text-align:right;font:inherit;color:inherit;border:none;outline:none;background:transparent;padding:0;margin:0;"><span style="font-size:14px;color:#6f7b8a;">A</span>
+      </label>
       <button onClick="{{ iUp }}" style="width:42px;height:44px;flex:none;border-radius:9px;border:1px solid #24303c;background:#0c1118;color:#ffb020;font:600 22px 'IBM Plex Mono';cursor:pointer;">+</button>
      </div>
      <input type="range" min="0" max="10" step="0.001" value="{{ setI }}" onInput="{{ onSetI }}" style="width:100%;accent-color:#ffb020;">
@@ -177,7 +181,9 @@
        <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6f7b8a;">OVP · VOLTAGE</span>
        <div style="display:flex;align-items:center;gap:6px;">
         <button onClick="{{ ovpDown }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">−</button>
-        <div style="flex:1;text-align:center;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;">{{ ovpStr }} V</div>
+        <label style="flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:4px;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;cursor:text;">
+         <input type="text" inputMode="decimal" title="Type a value and press Enter" value="{{ ovpField }}" onFocus="{{ focusOvp }}" onChange="{{ editOvp }}" onKeyDown="{{ keyOvp }}" onBlur="{{ blurOvp }}" onMouseUp="{{ mouseUpOvp }}" style="width:4.5ch;text-align:right;font:inherit;color:inherit;border:none;outline:none;background:transparent;padding:0;margin:0;"><span>V</span>
+        </label>
         <button onClick="{{ ovpUp }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">+</button>
        </div>
       </div>
@@ -185,7 +191,9 @@
        <span style="font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#6f7b8a;">OCP · CURRENT</span>
        <div style="display:flex;align-items:center;gap:6px;">
         <button onClick="{{ ocpDown }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">−</button>
-        <div style="flex:1;text-align:center;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;">{{ ocpStr }} A</div>
+        <label style="flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:4px;font:600 15px 'IBM Plex Mono';color:#dbe2ea;background:#080c12;border:1px solid #1b2430;border-radius:8px;padding:9px 0;cursor:text;">
+         <input type="text" inputMode="decimal" title="Type a value and press Enter" value="{{ ocpField }}" onFocus="{{ focusOcp }}" onChange="{{ editOcp }}" onKeyDown="{{ keyOcp }}" onBlur="{{ blurOcp }}" onMouseUp="{{ mouseUpOcp }}" style="width:5ch;text-align:right;font:inherit;color:inherit;border:none;outline:none;background:transparent;padding:0;margin:0;"><span>A</span>
+        </label>
         <button onClick="{{ ocpUp }}" style="width:30px;height:36px;flex:none;border-radius:8px;border:1px solid #24303c;background:#0c1118;color:#ff8b96;font:600 16px 'IBM Plex Mono';cursor:pointer;">+</button>
        </div>
       </div>
@@ -231,6 +239,7 @@ class Component extends DCLogic {
       now: Date.now(),
       elapsed:0,
       error:null,
+      drafts:{},
     };
   }
 
@@ -368,6 +377,11 @@ class Component extends DCLogic {
     this.errorTimer = setTimeout(()=> this.setState({ error:null }), 6000);
     this.loadState();
   }
+  flashError(msg){
+    clearTimeout(this.errorTimer);
+    this.setState({ error:msg });
+    this.errorTimer = setTimeout(()=> this.setState({ error:null }), 6000);
+  }
   debounced(key, fn, ms=180){
     clearTimeout(this.debounceTimers[key]);
     this.debounceTimers[key] = setTimeout(fn, ms);
@@ -471,9 +485,70 @@ class Component extends DCLogic {
   ocpUp(){ const v=this.clamp(this.round(this.state.ocp+0.1,0.01),0,10.2); this.setState({ ocp:v }); this.debounced('ocp', ()=>this.setCurrentLimit(v)); }
   ocpDown(){ const v=this.clamp(this.round(this.state.ocp-0.1,0.01),0,10.2); this.setState({ ocp:v }); this.debounced('ocp', ()=>this.setCurrentLimit(v)); }
 
+  // ---- typed entry: click a value, type, Enter applies, Esc/click-away cancels ----
+  // key: state field; fmt: decimals shown; step: rounding; apply: backend call.
+  get fields(){
+    return {
+      setV:{ label:'VOLTAGE', min:0, max:60,   dec:2, step:0.01,  apply:(v)=>this.setVoltage(v) },
+      setI:{ label:'CURRENT', min:0, max:10,   dec:3, step:0.001, apply:(v)=>this.setCurrent(v) },
+      ovp: { label:'OVP',     min:0, max:62,   dec:1, step:0.1,   apply:(v)=>this.setVoltageLimit(v) },
+      ocp: { label:'OCP',     min:0, max:10.2, dec:2, step:0.01,  apply:(v)=>this.setCurrentLimit(v) },
+    };
+  }
+  fieldValue(key){
+    const d = this.state.drafts[key];
+    return d !== undefined ? d : this.fmt(this.state[key], this.fields[key].dec);
+  }
+  setDraft(key, val){
+    const drafts = Object.assign({}, this.state.drafts);
+    if(val === undefined) delete drafts[key]; else drafts[key] = val;
+    this.setState({ drafts });
+  }
+  // Select the whole value on focus so typing replaces it. The mouseup that
+  // follows a click would drop that selection, so swallow it once.
+  focusField(key, e){
+    this.setDraft(key, this.fmt(this.state[key], this.fields[key].dec));
+    e.target.select();
+    this.justFocused = true;
+  }
+  mouseUpField(e){
+    if(this.justFocused){ e.preventDefault(); this.justFocused = false; }
+  }
+  commitField(key){
+    const f = this.fields[key];
+    const raw = String(this.state.drafts[key] ?? '').trim().replace(',', '.');
+    const v = Number(raw);
+    if(raw === '' || !Number.isFinite(v) || v < f.min || v > f.max){
+      this.flashError(f.label+' MUST BE '+f.min+'–'+f.max);
+      return false;
+    }
+    const val = this.round(v, f.step);
+    clearTimeout(this.debounceTimers[key]);
+    this.setState({ [key]: val });
+    f.apply(val);
+    return true;
+  }
+  keyField(key, e){
+    if(e.key === 'Enter'){ if(this.commitField(key)) e.target.blur(); else e.target.select(); }
+    else if(e.key === 'Escape'){ e.target.blur(); }
+  }
+
   fmt(n,d){ return Number(n).toFixed(d); }
   ghost(s){ return s.replace(/[0-9]/g,'8'); }
   timeStr(sec){ const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+
+  fieldHandlers(){
+    const out = {};
+    for(const [key, name] of [['setV','SetV'],['setI','SetI'],['ovp','Ovp'],['ocp','Ocp']]){
+      out[key+'Field'] = this.fieldValue(key);
+      out['focus'+name] = (e)=> this.focusField(key, e);
+      out['edit'+name]  = (e)=> this.setDraft(key, e.target.value);
+      out['key'+name]   = (e)=> this.keyField(key, e);
+      out['blur'+name]  = ()=> this.setDraft(key, undefined);
+      out['mouseUp'+name] = (e)=> this.mouseUpField(e);
+    }
+    return out;
+  }
 
   renderVals(){
     const st = this.state;
@@ -547,6 +622,7 @@ class Component extends DCLogic {
       onSetV:(e)=>this.onSetV(e), onSetI:(e)=>this.onSetI(e),
       vUp:()=>this.vUp(), vDown:()=>this.vDown(), iUp:()=>this.iUp(), iDown:()=>this.iDown(),
       ovpUp:()=>this.ovpUp(), ovpDown:()=>this.ovpDown(), ocpUp:()=>this.ocpUp(), ocpDown:()=>this.ocpDown(),
+      ...this.fieldHandlers(),
     };
   }
 }
