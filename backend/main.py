@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -23,6 +24,8 @@ from .models import (
     VoltageResponse,
     VoltageSetRequest,
 )
+
+logger = logging.getLogger("uvicorn.error")
 
 
 async def call(app: FastAPI, fn, *args, **kwargs):
@@ -71,6 +74,7 @@ async def poll_loop(app: FastAPI) -> None:
         await asyncio.sleep(interval)
         if not app.state.device_connected:
             if not await _reconnect_device(app):
+                await _broadcast(app, {"device_connected": False})
                 continue
             app.state.device_connected = True
         try:
@@ -87,11 +91,19 @@ async def poll_loop(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     device = MP711135(port=cfg.PORT, baud=cfg.BAUD, timeout=cfg.TIMEOUT)
-    device.open()
-    device.remote()
+    # Don't crash if the supply is off or unplugged at boot: start
+    # disconnected and let poll_loop keep retrying until it shows up.
+    try:
+        device.open()
+        device.remote()
+        connected = True
+    except DeviceError as exc:
+        logger.warning("MP711135 not available at startup, will keep retrying: %s", exc)
+        device.close()
+        connected = False
     app.state.device = device
     app.state.device_lock = asyncio.Lock()
-    app.state.device_connected = True
+    app.state.device_connected = connected
     app.state.ws_clients = set()
     poll_task = asyncio.create_task(poll_loop(app))
     yield

@@ -135,7 +135,7 @@ python3 -m venv .venv
 - It can be overridden with environment variables if needed: `MP711135_PORT`, `MP711135_BAUD`, `MP711135_TIMEOUT`, `MP711135_POLL_HZ` (see `backend/config.py`).
 - If the USB gets disconnected, the interface's **USB · SCPI** indicator turns red (the backend detects the failure when reading/writing over the serial port and notifies it via WebSocket). The backend retries reopening `/dev/mp711135` on every polling cycle; when the cable is reconnected, it recovers on its own without restarting anything.
 - `--host 0.0.0.0` is necessary so other machines on the LAN can reach the API; with `127.0.0.1` (uvicorn's default) it would only be accessible from the host itself.
-- If it starts without errors, it's already talking to the real device (it opens the output in remote mode). You can verify with `curl http://localhost:8000/idn`.
+- If the MP711135 is connected it switches it to remote mode on startup; you can verify with `curl http://localhost:8000/idn`. If it isn't connected (or is powered off) the backend still starts, shows **USB · SCPI** as disconnected, and keeps retrying until it appears.
 
 #### 3. Frontend
 
@@ -148,9 +148,11 @@ python3 -m http.server 8080 --bind 0.0.0.0
 
 And from the browser (on the Pi itself or another machine on the LAN): `http://<Pi-IP>:8080/MP711135.dc.html`.
 
-The component has a `backendUrl` prop (by default pointing to the Pi's fixed IP on the home network, `http://192.168.1.42:8000`) which is the API URL the frontend uses — change it in the `data-props` of the `<script data-dc-script>` in `MP711135.dc.html` if the backend runs on a different IP or port.
+The component has a `backendUrl` prop which is the API URL the frontend uses. By default it is empty, which means "the same host that served the page, port 8000" — so if the backend and frontend run on the same Pi, it just works whatever its IP is. Set it in the `data-props` of the `<script data-dc-script>` in `MP711135.dc.html` only if the backend runs on a different host or port.
 
-> **Important:** both that default URL and the one you use to access from the browser (`http://<Pi-IP>:8080/...`) assume the Pi always has the same IP. Since the Pi gets its IP via DHCP, it must be reserved in the router (fixed assignment by MAC) so it doesn't change; otherwise, sooner or later the router might assign it a different one and both the link saved in the browser and the default `backendUrl` would stop pointing to the right place.
+React, Babel and the IBM Plex fonts are vendored in `frontend/vendor/`, so the interface loads on a LAN without internet access.
+
+> **Tip:** the link you use from the browser (`http://<Pi-IP>:8080/...`) still depends on the Pi's IP. Since the Pi gets its IP via DHCP, reserve it in the router (fixed assignment by MAC) so a saved bookmark keeps working.
 
 ## Current status
 

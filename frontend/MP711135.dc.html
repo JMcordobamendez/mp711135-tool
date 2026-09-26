@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Vendored locally so the UI loads on a LAN with no internet access.
+     support.js skips its CDN fetch when these globals already exist. -->
+<link rel="stylesheet" href="./vendor/fonts.css">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./vendor/babel.min.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dseg@0.46.0/css/dseg.css">
 <style>
   *{box-sizing:border-box;}
   body{margin:0;background:#070a0f;color:#cbd3dd;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
@@ -195,13 +197,13 @@
 
   </div>
 
-  <div style="text-align:center;font:500 10px 'IBM Plex Mono';color:#3a4451;letter-spacing:.14em;padding:2px 0 4px;">MP711135 · CONTROL INTERFACE · DEMONSTRATION SIMULATION</div>
+  <div style="text-align:center;font:500 10px 'IBM Plex Mono';color:#3a4451;letter-spacing:.14em;padding:2px 0 4px;">MP711135 · CONTROL INTERFACE</div>
 
  </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{
- &quot;backendUrl&quot;: {&quot;editor&quot;:&quot;string&quot;,&quot;default&quot;:&quot;http://192.168.1.42:8000&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Connection&quot;},
+ &quot;backendUrl&quot;: {&quot;editor&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Connection&quot;},
  &quot;graphWindowSec&quot;: {&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:30,&quot;min&quot;:10,&quot;max&quot;:90,&quot;step&quot;:5,&quot;unit&quot;:&quot; s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Graph&quot;},
  &quot;showGrid&quot;: {&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Graph&quot;}
 }">
@@ -215,6 +217,7 @@ class Component extends DCLogic {
     this.ws = null;
     this.reconnectTimer = null;
     this.debounceTimers = {};
+    this.errorTimer = null;
     this.state = {
       connected:false,
       deviceConnected:true,
@@ -227,12 +230,18 @@ class Component extends DCLogic {
       fault:null,
       now: Date.now(),
       elapsed:0,
+      error:null,
     };
   }
 
   get winSec(){ const w=Number(this.props.graphWindowSec); return (w>=10&&w<=90)?w:30; }
   get showGrid(){ return this.props.showGrid !== false; }
-  get baseUrl(){ return String(this.props.backendUrl || 'http://localhost:8000').replace(/\/+$/,''); }
+  // Empty backendUrl means "same host that served this page, port 8000", so
+  // the UI keeps working if the Pi's IP changes.
+  get baseUrl(){
+    const url = this.props.backendUrl || (location.protocol+'//'+location.hostname+':8000');
+    return String(url).replace(/\/+$/,'');
+  }
 
   componentDidMount(){
     this.initCanvas();
@@ -256,6 +265,7 @@ class Component extends DCLogic {
     clearInterval(this.clock);
     clearTimeout(this.reconnectTimer);
     for(const k in this.debounceTimers) clearTimeout(this.debounceTimers[k]);
+    clearTimeout(this.errorTimer);
     this.closeWs();
     if(this.ro) this.ro.disconnect();
   }
@@ -291,6 +301,9 @@ class Component extends DCLogic {
       try{
         const m = JSON.parse(ev.data);
         if(m.device_connected === false){ this.setState({ deviceConnected:false }); return; }
+        // Device just came back (or was absent when the page loaded):
+        // re-read setpoints/limits, which the WebSocket doesn't carry.
+        if(!this.state.deviceConnected) this.loadState();
         this.applyMeasurement(m);
       }catch(e){}
     };
@@ -327,16 +340,33 @@ class Component extends DCLogic {
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(body),
       });
-      if(!res.ok) throw new Error('HTTP '+res.status);
+      if(!res.ok) throw new Error(await this.errorDetail(res));
       onOk(await res.json());
-    }catch(e){ console.error('[MP711135] PUT '+path+' failed', e); }
+    }catch(e){ this.commandFailed('PUT '+path, e); }
   }
   async postAction(path, onOk){
     try{
       const res = await fetch(this.baseUrl+path, { method:'POST' });
-      if(!res.ok) throw new Error('HTTP '+res.status);
+      if(!res.ok) throw new Error(await this.errorDetail(res));
       onOk(await res.json());
-    }catch(e){ console.error('[MP711135] POST '+path+' failed', e); }
+    }catch(e){ this.commandFailed('POST '+path, e); }
+  }
+  async errorDetail(res){
+    try{
+      const d = (await res.json()).detail;
+      if(typeof d === 'string') return 'HTTP '+res.status+': '+d;
+      if(Array.isArray(d) && d[0] && d[0].msg) return 'HTTP '+res.status+': '+d[0].msg;
+    }catch(e){}
+    return 'HTTP '+res.status;
+  }
+  // A failed command leaves the optimistic value on screen even though the
+  // device never accepted it, so surface the error and re-read the real state.
+  commandFailed(what, e){
+    console.error('[MP711135] '+what+' failed', e);
+    clearTimeout(this.errorTimer);
+    this.setState({ error: what+' FAILED — '+(e && e.message ? e.message : 'NETWORK ERROR') });
+    this.errorTimer = setTimeout(()=> this.setState({ error:null }), 6000);
+    this.loadState();
   }
   debounced(key, fn, ms=180){
     clearTimeout(this.debounceTimers[key]);
@@ -471,7 +501,8 @@ class Component extends DCLogic {
 
     const statusBase = 'border-radius:9px;padding:12px 14px;font:600 12px \'IBM Plex Mono\';letter-spacing:.03em;text-align:center;';
     let statusStyle, statusText;
-    if(!st.connected){ statusStyle = statusBase+'background:#0c1118;border:1px solid #1b2430;color:#6f7b8a;'; statusText = st.loading ? 'CONNECTING…' : 'BACKEND UNREACHABLE'; }
+    if(st.error){ statusStyle = statusBase+'background:#25090d;border:1px solid #ff4d5e;color:#ff8b96;'; statusText = '⚠ '+st.error.toUpperCase(); }
+    else if(!st.connected){ statusStyle = statusBase+'background:#0c1118;border:1px solid #1b2430;color:#6f7b8a;'; statusText = st.loading ? 'CONNECTING…' : 'BACKEND UNREACHABLE'; }
     else if(st.fault){ statusStyle = statusBase+'background:#25090d;border:1px solid #ff4d5e;color:#ff8b96;'; statusText = '⚠ '+st.fault+' PROTECTION TRIPPED'; }
     else if(!st.outputOn){ statusStyle = statusBase+'background:#0c1118;border:1px solid #1b2430;color:#6f7b8a;'; statusText = 'OUTPUT OFF'; }
     else if(st.reg==='CC'){ statusStyle = statusBase+'background:#241a08;border:1px solid #3a2c10;color:#ffb020;'; statusText = 'CURRENT LIMIT (CC)'; }
