@@ -1,6 +1,9 @@
 # MP711135 Tool
 
-![MP711135 Tool interface](docs/images/ui-screenshot.png)
+<p>
+  <img src="docs/images/ui-screenshot.png" alt="MP711135 Tool, desktop" width="74%">
+  <img src="docs/images/ui-mobile.png" alt="MP711135 Tool, phone" width="22%">
+</p>
 
 Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) DC power supply from the browser, instead of operating it from its physical controls. The backend talks to the device over **USB using SCPI commands** through a serial port (**pyserial**), and exposes that functionality to a frontend via a **FastAPI**-built API.
 
@@ -18,6 +21,24 @@ Web interface to remotely control and monitor the **MP711135** (Multicomp Pro) D
 - **Regulation mode indication**: shows the active mode (CV - constant voltage / CC - constant current).
 
 In short: the app replaces the MP711135's physical panel with a web panel, designed to adjust and monitor the power supply from the PC while working at the bench.
+
+### Using sequences and ramps
+
+The **SEQUENCE · RAMPS** panel (below the graph) runs a list of steps, top to bottom. Each step:
+
+1. switches the output if **OUTPUT** is `ON`/`OFF` (`—` leaves it as it is; click to cycle),
+2. sets the current limit if **CURR A** has a value (empty = keep),
+3. goes to **VOLT V** — jumping if **RAMP s** is 0, or rising/falling linearly over **RAMP s** seconds from the previous step's voltage,
+4. stays there for **HOLD s** seconds, then moves on.
+
+**REPEAT** runs the whole list several times; after the last step the supply stays at the last values. **▶ START** / **■ STOP** start and stop it, and it also stops by itself if OVP, OCP or OTP trips. Example — ramp from 0 to 12 V in 10 s:
+
+| # | VOLT V | CURR A | OUTPUT | RAMP s | HOLD s |
+|---|---|---|---|---|---|
+| 1 | 0 | 1.5 | ON | 0 | 0 |
+| 2 | 12 | | — | 10 | 0 |
+
+**SOFT START** fills this in for you (0 V → current setpoint in 5 s). The sequence runs on the backend, so it keeps going if you close the page; the step list itself is remembered in your browser.
 
 ## The device
 
@@ -196,6 +217,7 @@ node tests/check_frontend.js   # syntax check of the UI's component script
 - Backend (pyserial + FastAPI): implemented. Modules `device.py` (SCPI communication), `main.py` (REST endpoints + WebSocket) and `models.py` (Pydantic validation). Includes open CORS (`allow_origins=["*"]`) so the frontend, served from a different origin/port, can call the API.
 - Real connection to the device over USB: **verified** against real hardware (`multicomp pro,MP711135,25281600,FV:V2.0.0` via `/dev/ttyUSB0`, CH340 adapter). Tested: `/idn`, `/state`, `/measurements`, `PUT /voltage` `/current` `/voltage-limit` `/current-limit` `/output`, `POST /faults/reset`, WebSocket `/ws/measurements` (5Hz stream) and range validation (422 for out-of-range values).
 - Frontend integration with the real backend: **done and tested** on the LAN (backend on the Raspberry Pi, browser on another machine).
+- Typed values, presets, front-panel sync, data logger, sequences/ramps, phone layout, offline assets and USB-reconnect handling: tested against the simulated device (`tests/fake_device.py`, pytest + GitHub Actions); **pending confirmation on the real hardware**.
 
 ## Stack
 
